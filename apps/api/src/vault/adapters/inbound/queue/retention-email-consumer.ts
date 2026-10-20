@@ -39,18 +39,20 @@ function renderDeletionNotice(message: VaultRetentionEmailMessage): {
 	const { vaultName, lastCommitAt } = message.notice;
 	const lastChange =
 		lastCommitAt === null
-			? "No vault content had been synced since the remote vault was created."
-			: `The last synced content change was ${formatTimestamp(lastCommitAt)}.`;
+			? "No content had been synced to this remote vault since it was created."
+			: `The last content change synced to this remote vault was on ${formatDate(lastCommitAt)}.`;
 	const lines = [
-		`Your free Synch remote vault “${vaultName}” was permanently deleted on ${formatTimestamp(message.deletedAt)}.`,
-		`Remote vaults on the free plan are deleted after ${FREE_VAULT_INACTIVITY_DELETE_DAYS} days without a synced content change. ${lastChange}`,
+		`Your Synch remote vault “${vaultName}” was automatically deleted on ${formatDate(message.deletedAt)}.`,
 		"",
-		"Your local Obsidian vault was not touched. Only the encrypted copy stored by Synch was removed, and Synch cannot recover it.",
-		"To sync this vault again, set it up as a new remote vault in the Synch plugin.",
+		`On the free plan, remote vaults are deleted after ${FREE_VAULT_INACTIVITY_DELETE_DAYS} days without any synced content changes. ${lastChange}`,
+		"",
+		"Your local Obsidian vault and its files are unaffected. Only the encrypted remote copy stored by Synch was deleted. This deletion is permanent, and Synch cannot restore that copy.",
+		"",
+		"To start syncing again, open your local vault in Obsidian and use the Synch plugin to set it up with a new remote vault.",
 	];
 
 	return {
-		subject: `Synch remote vault deleted: ${vaultName}`,
+		subject: `Synch remote vault deleted due to inactivity: ${vaultName}`,
 		text: lines.join("\n"),
 		html: lines
 			.map((line) => (line ? `<p>${escapeHtml(line)}</p>` : ""))
@@ -58,8 +60,13 @@ function renderDeletionNotice(message: VaultRetentionEmailMessage): {
 	};
 }
 
-function formatTimestamp(value: number): string {
-	return new Date(value).toISOString();
+function formatDate(value: number): string {
+	return `${new Intl.DateTimeFormat("en-US", {
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+		timeZone: "UTC",
+	}).format(value)} (UTC)`;
 }
 
 function escapeHtml(value: string): string {
