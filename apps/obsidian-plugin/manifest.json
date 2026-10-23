@@ -3,8 +3,8 @@
   "name": "Synchrun",
   "version": "0.5.5",
   "minAppVersion": "1.13.0",
-  "description": "Sync your vault across devices with end-to-end encryption.",
-  "author": "Synch",
-  "authorUrl": "https://github.com/hjinco",
+  "description": "Sync your vault across devices.",
+  "author": "Brian Schiller",
+  "authorUrl": "https://github.com/bgschiller/synch",
   "isDesktopOnly": false
 }
