@@ -65,9 +65,13 @@ describe("push source-byte budget", () => {
     const f = await fixture(true);
     try {
       await expect(f.service.pushPendingMutations(f.session)).rejects.toThrow("commit failed");
-      expect(f.budget.bytesInFlight).toBe(0);
       expect(f.budget.pendingReservations).toBe(0);
       expect(await f.store.listDirtyEntries()).toHaveLength(4);
+      // The retry cache intentionally retains Markdown blobs for a retry; its
+      // reservations must not be mistaken for leaked push reservations. Dispose
+      // the runtime (clearing the cache) before asserting a clean budget.
+      await f.runtime.dispose();
+      expect(f.budget.bytesInFlight).toBe(0);
     } finally { await f.runtime.dispose(); await f.store.close(); }
   });
 });

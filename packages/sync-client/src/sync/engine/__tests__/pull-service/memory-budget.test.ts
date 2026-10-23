@@ -8,6 +8,10 @@ import {
   encryptRemoteMetadata, encryptTestBlob, hashText, TEST_VAULT_KEY,
 } from "./helpers";
 
+// Identity crypto stores blobs as plaintext, so the advertised blob size is the
+// source byte count and a group's admission estimate is that size × 3.
+const RESERVED_GROUP_BYTES = new TextEncoder().encode("a".repeat(64)).byteLength * 3;
+
 async function fixture(options: { legacy?: boolean; budget?: number; advertisedSize?: number; count?: number; concurrency?: number } = {}) {
   const body = "a".repeat(64);
   const blobs = await Promise.all(Array.from({ length: options.count ?? 3 }, (_, id) => id).map((id) =>
@@ -60,14 +64,14 @@ async function fixture(options: { legacy?: boolean; budget?: number; advertisedS
 }
 
 describe("pull payload memory admission", () => {
-  it.each([291, 1])("holds a known group reservation through apply with budget %i", async (budget) => {
+  it.each([RESERVED_GROUP_BYTES, 1])("holds a known group reservation through apply with budget %i", async (budget) => {
     const f = await fixture({ budget });
     f.blockWrite();
     const pull = f.pull();
     try {
       await vi.waitFor(() => expect(f.writes).toEqual(["0.md"]));
       expect(f.downloads).toEqual(["blob-0"]);
-      expect(f.budget.bytesInFlight).toBe(291);
+      expect(f.budget.bytesInFlight).toBe(RESERVED_GROUP_BYTES);
     } finally {
       f.writeGate.resolve();
       await pull;
@@ -85,7 +89,7 @@ describe("pull payload memory admission", () => {
     try {
       await vi.waitFor(() => expect(f.writes).toEqual(["0.md"]));
       expect(f.downloads).toEqual(Array.from({ length: concurrency }, (_, id) => `blob-${id}`));
-      expect(f.budget.bytesInFlight).toBe(291 * concurrency);
+      expect(f.budget.bytesInFlight).toBe(RESERVED_GROUP_BYTES * concurrency);
     } finally {
       f.writeGate.resolve();
       await pull;

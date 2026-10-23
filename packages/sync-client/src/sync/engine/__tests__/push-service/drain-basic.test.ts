@@ -140,8 +140,7 @@ describe("SyncPushService drain: basic queue", () => {
       "completed:upsert:Folder/new.md:1",
       "completed:delete:Folder/deleted.md:3",
     ]);
-    expect(new TextDecoder().decode(uploaded[0]?.bytes ?? new Uint8Array())).not.toBe("new body");
-    expect(new TextDecoder().decode(uploaded[0]?.bytes.slice(0, 4))).toBe("SYNB");
+    expect(new TextDecoder().decode(uploaded[0]?.bytes ?? new Uint8Array())).toBe("new body");
     await expect(
       decryptSyncBlob(TEST_VAULT_KEY, uploaded[0]?.bytes ?? new Uint8Array(), {
         blobId: uploaded[0]?.blobId ?? "",

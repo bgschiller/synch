@@ -57,7 +57,7 @@ describe("SyncPullService deferred path dependencies", () => {
               entryId: "entry-a",
               revision: 2,
               blobId: "blob-a-new",
-              blobSize: 38,
+              blobSize: 5,
               encryptedMetadata: await encryptRemoteMetadata({
                 entryId: "entry-a",
                 revision: 2,
@@ -90,7 +90,7 @@ describe("SyncPullService deferred path dependencies", () => {
               entryId: "entry-b",
               revision: 2,
               blobId: "blob-b-new",
-              blobSize: 38,
+              blobSize: 5,
               encryptedMetadata: await encryptRemoteMetadata({
                 entryId: "entry-b",
                 revision: 2,
