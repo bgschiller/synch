@@ -1,6 +1,5 @@
 import type { CliAppContext } from "../app/context";
 import { CliUsageError } from "../app/context";
-import { promptHidden } from "./prompt";
 
 export async function runVaultConnect(
   ctx: CliAppContext,
@@ -15,14 +14,8 @@ export async function runVaultConnect(
   await ctx.initializeAuth();
   ctx.requireVerifiedAuth();
 
-  const password = await promptHidden("Vault password: ");
-  if (!password) {
-    throw new CliUsageError("Password is required.");
-  }
-
   await ctx.remoteVaultManager.bootstrapRemoteVault({
     vaultId: vaultId.trim(),
-    password,
   });
 
   // Bind the local sync store to the connected remote vault.

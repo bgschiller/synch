@@ -36,7 +36,7 @@ function setup(status: "active" | "pending_key" = "active") {
 beforeEach(resetObsidianMocks);
 
 describe("connect vault onboarding", () => {
-  it.each(["click", "Enter"])("shows a spinner during %s submission and clears it after failure", async (method) => {
+  it("shows a spinner during submission and clears it after failure", async () => {
     const { open, flow } = setup();
     let fail!: (error: Error) => void;
     flow.connect.mockImplementation(() => new Promise((_resolve, reject) => { fail = reject; }));
@@ -44,23 +44,21 @@ describe("connect vault onboarding", () => {
     await tick();
     await button("Team notes").click();
     const submitButton = button(t("vault.connect"));
-    const submission = method === "click"
-      ? submitButton.click()
-      : getTextComponents().at(-1)!.pressKey("Enter");
+    const submission = submitButton.click();
     await tick();
     const spinners = () => getCreatedElements().filter((element) => element.classes.includes("synch-button-spinner"));
     expect(spinners()).toHaveLength(1);
     expect(spinners()[0]?.attributes["data-icon"]).toBe("loader-circle");
     expect(submitButton.disabled).toBe(true);
-    fail(new Error("Wrong password"));
+    fail(new Error("connect failed"));
     await submission;
     await tick();
     expect(spinners()).toHaveLength(0);
     expect(submitButton.disabled).toBe(false);
-    expect(inlineError("Wrong password")).toBe(true);
+    expect(inlineError("connect failed")).toBe(true);
   });
 
-  it("offers password connection without recovery controls on older servers", async () => {
+  it("offers a direct connection without recovery controls on older servers", async () => {
     const { item, open } = setup();
     item.sharingEnabled = false;
     item.vault.personal = true;
@@ -69,7 +67,7 @@ describe("connect vault onboarding", () => {
     const result = open();
     await tick();
     await button("Team notes").click();
-    expect(getTextComponents()).toHaveLength(1);
+    expect(getTextComponents()).toHaveLength(0);
     expect(getButtonComponents().map(entry => entry.text)).not.toContain(t("sharing.recovery"));
     getOpenModals().at(-1)?.close();
     await expect(result).resolves.toBe(false);
@@ -85,21 +83,20 @@ describe("connect vault onboarding", () => {
       t("sharing.refresh"), "Team notes", t("sharing.refresh"),
     ]);
     await button("Team notes").click();
-    expect(getTextComponents()).toHaveLength(1);
+    expect(getTextComponents()).toHaveLength(0);
     await button(t("vault.allVaults")).click();
     expect(getButtonComponents().at(-2)?.text).toBe("Team notes");
     expect(getButtonComponents().at(-1)?.text).toBe(t("sharing.refresh"));
   });
 
-  it("shows organizations and invitation labels, and connects on Enter", async () => {
+  it("shows organizations and invitation labels, and connects on click", async () => {
     const { open, flow } = setup();
     const result = open();
     await tick();
     await button("Team notes")?.click();
     expect(getCreatedElementTexts()).toContain("Team");
-    await getTextComponents().at(-1)?.change("my password");
-    await getTextComponents().at(-1)?.pressKey("Enter");
-    expect(flow.connect).toHaveBeenCalledWith("vault", "my password", undefined);
+    await button(t("vault.connect")).click();
+    expect(flow.connect).toHaveBeenCalledWith("vault");
     await expect(result).resolves.toBe(true);
   });
 
@@ -109,7 +106,6 @@ describe("connect vault onboarding", () => {
     const result = open();
     await tick();
     await button("Team notes")?.click();
-    await getTextComponents().at(-1)?.change("wrong");
     await button(t("vault.connect")).click();
     expect(inlineError("Wrong password")).toBe(true);
     getOpenModals().at(-1)?.close();
@@ -135,7 +131,7 @@ describe("connect vault onboarding", () => {
     await expect(result).resolves.toBe(true);
   });
 
-  it("guides pending access through request, verified code, approval, and personal password", async () => {
+  it("guides pending access through request, verified code, approval, and connection", async () => {
     const { open, flow } = setup("pending_key");
     const request = { status: "pending", expiresAt: Date.now() + 60_000 } as VaultKeyRequest;
     flow.request.mockImplementation(async () => { flow.localRequest.mockResolvedValue(request); });
@@ -149,11 +145,8 @@ describe("connect vault onboarding", () => {
     expect(getCreatedElementTexts()).toContain(t("sharing.waiting"));
     request.status = "approved";
     await button(t("vault.checkApproval")).click();
-    const [password, confirm] = getTextComponents().slice(-2);
-    await password?.change("my new password");
-    await confirm?.change("my new password");
-    await button(t("vault.saveAndConnect")).click();
-    expect(flow.connect).toHaveBeenCalledWith("vault", "my new password", "my new password");
+    await button(t("vault.connect")).click();
+    expect(flow.connect).toHaveBeenCalledWith("vault");
     await expect(result).resolves.toBe(true);
   });
 
@@ -163,7 +156,7 @@ describe("connect vault onboarding", () => {
     void open();
     await tick();
     await button("Team notes")?.click();
-    expect(button(t("vault.saveAndConnect"))).toBeDefined();
+    expect(button(t("vault.connect"))).toBeDefined();
     expect(flow.verificationCode).not.toHaveBeenCalled();
     expect(flow.request).not.toHaveBeenCalled();
   });

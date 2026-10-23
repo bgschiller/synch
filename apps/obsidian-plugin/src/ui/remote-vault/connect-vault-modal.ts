@@ -1,6 +1,5 @@
 import { App, Modal, Setting, setIcon, type ButtonComponent } from "obsidian";
 import { t } from "../../i18n";
-import { submitOnEnter } from "../keyboard";
 import { showButtonLoading } from "../button-loading";
 import { ConnectVaultFlow, type ConnectableVault } from "./connect-vault-flow";
 
@@ -21,7 +20,6 @@ export class ConnectVaultModal extends Modal {
   private errorEl!: HTMLElement;
   private bodyEl!: HTMLElement;
   private selectedId: string | null = null;
-  private recovering = false;
 
   constructor(app: App, private readonly flow: ConnectVaultFlow, private readonly preferredId: string | null) {
     super(app);
@@ -132,7 +130,6 @@ export class ConnectVaultModal extends Modal {
       for (const item of group) {
         const button = this.addButton(this.row("synch-connect-choice"), item.vault.name, async () => {
           this.selectedId = item.vault.id;
-          this.recovering = false;
           await this.refresh();
         });
         const el = button.buttonEl;
@@ -159,7 +156,6 @@ export class ConnectVaultModal extends Modal {
     this.resetScreen();
     this.addButton(this.row("synch-connect-back"), t("vault.allVaults"), async () => {
       this.selectedId = null;
-      this.recovering = false;
       await this.refresh();
     });
     if (item.organizationName) this.bodyEl.createEl("p", { text: item.organizationName, cls: "synch-connect-eyebrow" });
@@ -171,18 +167,12 @@ export class ConnectVaultModal extends Modal {
       return;
     }
     const { vault } = item;
-    if (vault.status === "active" && !this.recovering) {
-      this.passwordForm(vault.id, false);
-      if (item.sharingEnabled) this.addButton(this.row("synch-connect-secondary"), t("sharing.recovery"), async () => {
-        this.recovering = true;
-        await this.refresh();
+    if (vault.status === "active") {
+      this.primary(t("vault.connect"), async () => {
+        this.connected = await this.flow.connect(vault.id);
       });
       return;
     }
-    if (vault.status === "active") this.addButton(this.row("synch-connect-secondary"), t("vault.usePassword"), async () => {
-      this.recovering = false;
-      await this.refresh();
-    });
     if (!item.sharingEnabled) {
       this.bodyEl.createEl("p", { text: t("sharing.suspended"), cls: "synch-connect-notice" });
       return;
@@ -197,7 +187,9 @@ export class ConnectVaultModal extends Modal {
     if (request && request.status !== "canceled" && request.expiresAt > Date.now()) {
       if (request.status === "approved" || request.status === "completed") {
         this.bodyEl.createEl("p", { text: t("vault.accessApproved"), cls: "synch-connect-hint" });
-        this.passwordForm(vault.id, true);
+        this.primary(t("vault.connect"), async () => {
+          this.connected = await this.flow.connect(vault.id);
+        });
         return;
       }
       this.bodyEl.createEl("h3", { text: t("sharing.waiting"), cls: "synch-connect-status" });
@@ -230,33 +222,5 @@ export class ConnectVaultModal extends Modal {
       await this.flow.request(vaultId, true);
       await this.refresh();
     });
-  }
-
-  private passwordForm(vaultId: string, enrollment: boolean): void {
-    let password = "";
-    let confirmation = "";
-    let submitButton: ButtonComponent;
-    const submit = async (): Promise<void> => {
-      this.connected = await this.flow.connect(vaultId, password, enrollment ? confirmation : undefined);
-    };
-    this.row("synch-connect-field")
-      .setName(t(enrollment ? "sharing.setPassword" : "vault.password"))
-      .addText((text) => {
-        text.inputEl.type = "password";
-        text.inputEl.autocomplete = enrollment ? "new-password" : "current-password";
-        text.inputEl.setAttribute("aria-label", t(enrollment ? "sharing.setPassword" : "vault.password"));
-        text.setPlaceholder(t("vault.passwordPlaceholder")).onChange((value) => { password = value; });
-        submitOnEnter(text.inputEl, () => this.run(submit, submitButton));
-      });
-    if (enrollment) this.row("synch-connect-field")
-      .setName(t("vault.confirmPassword"))
-      .addText((text) => {
-        text.inputEl.type = "password";
-        text.inputEl.autocomplete = "new-password";
-        text.inputEl.setAttribute("aria-label", t("vault.confirmPassword"));
-        text.setPlaceholder(t("vault.passwordConfirmPlaceholder")).onChange((value) => { confirmation = value; });
-        submitOnEnter(text.inputEl, () => this.run(submit, submitButton));
-      });
-    submitButton = this.primary(t(enrollment ? "vault.saveAndConnect" : "vault.connect"), submit);
   }
 }

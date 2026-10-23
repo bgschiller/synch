@@ -18,74 +18,36 @@ describe("create vault modal", () => {
     resetObsidianMocks();
   });
 
-  it("disables create while password confirmation does not match", async () => {
-    void openCreateRemoteVaultModal(new App(), "Personal");
+  it("disables create while the name is empty", async () => {
+    void openCreateRemoteVaultModal(new App(), "   ");
 
     const createButton = getButtonComponents().find((button) => button.text === "Create vault");
-    const [, passwordInput, confirmPasswordInput] = getTextComponents();
+    const [nameInput] = getTextComponents();
 
     expect(createButton?.disabled).toBe(true);
 
-    await passwordInput?.change("correct horse battery staple");
-    await confirmPasswordInput?.change("different horse battery staple");
+    await nameInput?.change("Personal");
 
-    expect(createButton?.disabled).toBe(true);
+    expect(createButton?.disabled).toBe(false);
   });
 
-  it("disables create while password is too weak", async () => {
-    void openCreateRemoteVaultModal(new App(), "Personal");
-
-    const createButton = getButtonComponents().find((button) => button.text === "Create vault");
-    const [, passwordInput, confirmPasswordInput] = getTextComponents();
-
-    await passwordInput?.change("vault-password");
-    await confirmPasswordInput?.change("vault-password");
-
-    expect(createButton?.disabled).toBe(true);
-  });
-
-  it("submits once required fields are valid and passwords match", async () => {
+  it("submits once a name is provided", async () => {
     const modalResult = openCreateRemoteVaultModal(new App(), "Personal");
 
     const createButton = getButtonComponents().find((button) => button.text === "Create vault");
-    const [, passwordInput, confirmPasswordInput] = getTextComponents();
-
-    await passwordInput?.change("correct horse battery staple");
-    await confirmPasswordInput?.change("correct horse battery staple");
     void createButton?.click();
     await Promise.resolve();
 
-    expect(getCreatedElementTexts()).toContain(t("vault.backupHint"));
-    await getButtonComponents()
-      .find((button) => button.text === "I backed up, create vault")
-      ?.click();
-
-    await expect(modalResult).resolves.toEqual({
-      name: "Personal",
-      password: "correct horse battery staple",
-      confirmPassword: "correct horse battery staple",
-    });
+    await expect(modalResult).resolves.toEqual({ name: "Personal" });
   });
 
-  it("submits when Enter is pressed in a text field", async () => {
+  it("submits when Enter is pressed in the name field", async () => {
     const modalResult = openCreateRemoteVaultModal(new App(), "Personal");
 
-    const [, passwordInput, confirmPasswordInput] = getTextComponents();
+    const [nameInput] = getTextComponents();
+    await nameInput?.pressKey("Enter");
 
-    await passwordInput?.change("correct horse battery staple");
-    await confirmPasswordInput?.change("correct horse battery staple");
-    await confirmPasswordInput?.pressKey("Enter");
-
-    expect(getCreatedElementTexts()).toContain(t("vault.backupHint"));
-    await getButtonComponents()
-      .find((button) => button.text === "I backed up, create vault")
-      ?.click();
-
-    await expect(modalResult).resolves.toEqual({
-      name: "Personal",
-      password: "correct horse battery staple",
-      confirmPassword: "correct horse battery staple",
-    });
+    await expect(modalResult).resolves.toEqual({ name: "Personal" });
   });
 });
 

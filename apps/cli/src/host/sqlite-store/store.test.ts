@@ -373,7 +373,9 @@ describe("SqliteSyncStore parity with InMemorySyncStore", () => {
     expect(sqliteState?.dirty?.baseRevision).toBe(7);
     expect(sqliteState?.dirty?.baseBlobId).toBe("remote-blob");
     expect(referenceState?.dirty?.baseRevision).toBe(7);
-    expect(sqliteState?.dirty?.encryptedMetadata).not.toBe(
+    // Identity crypto re-encryption is a no-op, so the rebased metadata is the
+    // same serialized value as the pending mutation's.
+    expect(sqliteState?.dirty?.encryptedMetadata).toBe(
       replacedMutation.encryptedMetadata,
     );
 

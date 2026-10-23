@@ -1,6 +1,5 @@
 import {
   formatErrorNotice,
-  formatVaultPasswordValidationError,
   t,
   type SynchErrorContextKey,
 } from "../../i18n";
@@ -20,12 +19,6 @@ function localizeDomainError(error: unknown): unknown {
     switch (error.failure.kind) {
       case "name_required":
         return new Error(t("vault.nameRequired"));
-      case "password_mismatch":
-        return new Error(t("vault.passwordMismatch"));
-      case "invalid_password":
-        return new Error(
-          formatVaultPasswordValidationError(error.failure.validation),
-        );
     }
   }
 

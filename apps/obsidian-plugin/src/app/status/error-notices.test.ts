@@ -22,37 +22,6 @@ describe("formatSynchErrorNotice", () => {
         message: t("vault.nameRequired"),
       }),
     );
-
-    expect(
-      formatSynchErrorNotice(
-        new RemoteVaultInputError({ kind: "password_mismatch" }),
-        "error.vaultCreation",
-      ),
-    ).toBe(
-      t("error.detail", {
-        context: t("error.vaultCreation"),
-        message: t("vault.passwordMismatch"),
-      }),
-    );
-
-    expect(
-      formatSynchErrorNotice(
-        new RemoteVaultInputError({
-          kind: "invalid_password",
-          validation: {
-            ok: false,
-            code: "too_weak",
-            message: "Password is too weak.",
-          },
-        }),
-        "error.vaultCreation",
-      ),
-    ).toBe(
-      t("error.detail", {
-        context: t("error.vaultCreation"),
-        message: t("vault.passwordTooWeak"),
-      }),
-    );
   });
 
   it("passes other errors through to the shared formatter", () => {

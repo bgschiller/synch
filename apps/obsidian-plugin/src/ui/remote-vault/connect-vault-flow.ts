@@ -96,22 +96,13 @@ export class ConnectVaultFlow {
     this.assertCurrentAccount();
   }
 
-  async connect(vaultId: string, password: string, confirmPassword?: string): Promise<boolean> {
-    let item = await this.requireAvailable(vaultId);
+  async connect(vaultId: string): Promise<boolean> {
+    const item = await this.requireAvailable(vaultId);
     if (item.vault.personal && !await this.deps.confirmPersonalVault()) return false;
     this.assertCurrentAccount();
-    if (confirmPassword !== undefined &&
-      (item.vault.status === "pending_key" || await this.localRequest(vaultId))) {
-      await this.deps.manager.receive(vaultId, password, confirmPassword);
-      // Completing enrollment does not change the local connection. Re-read the
-      // grant and local files before attaching, including after a slow approval.
-      item = await this.requireAvailable(vaultId);
-    }
     if (item.vault.status !== "active") throw new Error(t("sharing.waiting"));
-    const blocked = await this.blockingReason(item);
-    if (blocked) throw new Error(blocked);
     this.assertCurrentAccount();
-    await this.deps.bootstrap({ vaultId, password }, async () => {
+    await this.deps.bootstrap({ vaultId }, async () => {
       const reason = await this.blockingReason(item);
       if (reason) throw new Error(reason);
       this.assertCurrentAccount();
