@@ -14,6 +14,11 @@ import {
 } from "./policies/allowed-emails";
 import { defaultOrganizationSlug } from "./policies/organization";
 
+// Cap the number of vault-scoped organizations a user may create (work, personal,
+// household, etc.). Better Auth's organization plugin requires a concrete limit;
+// use a generously high value instead of a sentinel.
+const MAX_ORGANIZATIONS_PER_USER = 100;
+
 export type OutgoingEmail = {
 	from: string;
 	to: string;
@@ -171,7 +176,7 @@ export function createBetterAuth(db: AppDb, config: BetterAuthConfig) {
 			},
 		},
 		plugins: [
-			organization({ organizationLimit: 1 }),
+			organization({ organizationLimit: MAX_ORGANIZATIONS_PER_USER }),
 			lastLoginMethod({
 				// Managed email sign-up creates a session only after verification.
 				customResolveMethod: (ctx) => ctx.path === "/verify-email" ? "email" : null,
