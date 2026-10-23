@@ -43,8 +43,8 @@ export class ConnectVaultFlow {
       this.assertCurrentAccount();
       const vaults = await this.deps.listLegacyVaults();
       this.assertCurrentAccount();
-      // Preserve the original password-and-merge-confirmation flow. Old servers
-      // do not provide sharing provenance, so no enrollment controls are shown.
+      // Preserve the original merge-confirmation flow. Old servers do not
+      // provide sharing provenance, so no enrollment controls are shown.
       return vaults.map(vault => ({
         vault: { id: vault.id, name: vault.name, personal: true, shared: false,
           canManage: false, status: "active", members: [] },
@@ -55,7 +55,7 @@ export class ConnectVaultFlow {
     this.assertCurrentAccount();
     return organizations.flatMap((organization) =>
       organization.vaults
-        .filter((vault) => vault.status === "active" || vault.status === "pending_key")
+        .filter((vault) => vault.status === "active")
         .map((vault) => ({
           vault,
           organizationName: organization.role === "owner" ? "" : organization.name,
@@ -74,33 +74,9 @@ export class ConnectVaultFlow {
     return null;
   }
 
-  async localRequest(vaultId: string) {
-    this.assertCurrentAccount();
-    const request = await this.deps.manager.localRequest(vaultId);
-    this.assertCurrentAccount();
-    return request;
-  }
-
-  async verificationCode(vaultId: string): Promise<string> {
-    this.assertCurrentAccount();
-    const code = await this.deps.manager.recipientVerificationCode(vaultId);
-    this.assertCurrentAccount();
-    return code;
-  }
-
-  async request(vaultId: string, restart = false): Promise<void> {
-    const item = await this.requireAvailable(vaultId);
-    if (!item.sharingEnabled) throw new Error(t("sharing.suspended"));
-    if (restart) await this.deps.manager.restart(vaultId);
-    else await this.deps.manager.begin(vaultId);
-    this.assertCurrentAccount();
-  }
-
   async connect(vaultId: string): Promise<boolean> {
     const item = await this.requireAvailable(vaultId);
     if (item.vault.personal && !await this.deps.confirmPersonalVault()) return false;
-    this.assertCurrentAccount();
-    if (item.vault.status !== "active") throw new Error(t("sharing.waiting"));
     this.assertCurrentAccount();
     await this.deps.bootstrap({ vaultId }, async () => {
       const reason = await this.blockingReason(item);

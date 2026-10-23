@@ -1,4 +1,3 @@
-import { ObsidianKeyReceiverStore } from "../adapters/key-receiver-storage";
 import { SharingModal } from "../ui/sharing/sharing-modal";
 import type { UserVisibleSyncProgress } from "@synch/sync-client/engine";
 import { Notice, type Plugin, TFolder } from "obsidian";
@@ -711,7 +710,7 @@ export class SynchPluginController implements SynchSettingsController {
     const user = await new AuthClient(defaultHttpClient, "synch-obsidian-plugin").getAuthenticatedUser(apiBaseUrl, token);
     if (!isCurrentAccount()) throw new Error(t("sharing.accountChanged"));
     if (!user) throw new Error("Sign in before managing vault access.");
-    const manager = new SharingManager(new SharingClient(defaultHttpClient, apiBaseUrl, token), user.userId, new ObsidianKeyReceiverStore(this.plugin));
+    const manager = new SharingManager(new SharingClient(defaultHttpClient, apiBaseUrl, token), user.userId);
     return { manager, isCurrentAccount };
   }
 

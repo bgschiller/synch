@@ -14,7 +14,7 @@ export type Command =
 let device: Device | undefined;
 async function handle(command: Command) {
   if (command.type === "init") {
-    const remote = attachVault(command.baseUrl, command.cookie, command.vaultId, new Uint8Array(command.key));
+    const remote = attachVault(command.baseUrl, command.cookie, command.vaultId);
     // Every receiver independently fetches and unwraps the real server envelope.
     device = new Device(command.directory, command.baseUrl, remote, await remote.unlock());
     await device.initialize(remote);

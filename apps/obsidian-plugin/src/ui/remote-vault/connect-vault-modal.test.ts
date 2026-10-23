@@ -1,6 +1,5 @@
 import { App } from "obsidian";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { VaultKeyRequest } from "@synch/sync-client/remote";
 import {
   getButtonComponents, getCreatedElements, getCreatedElementTexts,
   getOpenModals, getTextComponents, resetObsidianMocks,
@@ -24,9 +23,6 @@ function setup(status: "active" | "pending_key" = "active") {
     assertCurrentAccount: vi.fn(),
     list: vi.fn(async () => [item]),
     blockingReason: vi.fn(async (): Promise<string | null> => null),
-    localRequest: vi.fn(async (): Promise<VaultKeyRequest | null> => null),
-    verificationCode: vi.fn(async () => "verified-local-code"),
-    request: vi.fn(async () => {}),
     connect: vi.fn(async () => true),
   };
   const open = () => openConnectVaultModal(new App(), flow as unknown as ConnectVaultFlow, null);
@@ -131,47 +127,6 @@ describe("connect vault onboarding", () => {
     await expect(result).resolves.toBe(true);
   });
 
-  it("guides pending access through request, verified code, approval, and connection", async () => {
-    const { open, flow } = setup("pending_key");
-    const request = { status: "pending", expiresAt: Date.now() + 60_000 } as VaultKeyRequest;
-    flow.request.mockImplementation(async () => { flow.localRequest.mockResolvedValue(request); });
-    const result = open();
-    await tick();
-    await button("Team notes")?.click();
-    expect(getTextComponents()).toHaveLength(0);
-    await button(t("sharing.request")).click();
-    expect(flow.request).toHaveBeenCalledWith("vault");
-    expect(getCreatedElementTexts()).toContain("verified-local-code");
-    expect(getCreatedElementTexts()).toContain(t("sharing.waiting"));
-    request.status = "approved";
-    await button(t("vault.checkApproval")).click();
-    await button(t("vault.connect")).click();
-    expect(flow.connect).toHaveBeenCalledWith("vault");
-    await expect(result).resolves.toBe(true);
-  });
-
-  it("resumes an approved request when the picker is reopened", async () => {
-    const { open, flow } = setup("pending_key");
-    flow.localRequest.mockResolvedValue({ status: "approved", expiresAt: Date.now() + 60_000 } as VaultKeyRequest);
-    void open();
-    await tick();
-    await button("Team notes")?.click();
-    expect(button(t("vault.connect"))).toBeDefined();
-    expect(flow.verificationCode).not.toHaveBeenCalled();
-    expect(flow.request).not.toHaveBeenCalled();
-  });
-
-  it("offers explicit replacement when a saved request is missing on the server", async () => {
-    const { open, flow } = setup("pending_key");
-    flow.localRequest.mockRejectedValueOnce(new Error("Request not found"));
-    void open();
-    await tick();
-    await button("Team notes")?.click();
-    expect(inlineError("Request not found")).toBe(true);
-    await button(t("sharing.restart")).click();
-    expect(flow.request).toHaveBeenCalledWith("vault", true);
-  });
-
   it("shows an empty-vault explanation without password or approval controls when blocked", async () => {
     const { open, flow } = setup("pending_key");
     flow.blockingReason.mockResolvedValue(t("vault.invitedNeedsEmpty"));
@@ -195,14 +150,4 @@ describe("connect vault onboarding", () => {
     expect(getCreatedElementTexts()).toContain(t("vault.acceptOnWeb"));
   });
 
-  it("does not reveal request codes or submit after the account changes", async () => {
-    const { open, flow } = setup("pending_key");
-    void open();
-    await tick();
-    await button("Team notes")?.click();
-    flow.assertCurrentAccount.mockImplementation(() => { throw new Error(t("sharing.accountChanged")); });
-    await button(t("sharing.request")).click();
-    expect(flow.request).not.toHaveBeenCalled();
-    expect(inlineError(t("sharing.accountChanged"))).toBe(true);
-  });
 });

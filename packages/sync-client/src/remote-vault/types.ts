@@ -1,16 +1,3 @@
-import type { RemoteVaultKeyEnvelope } from "@synch/vault-crypto/types";
-
-export type {
-  RemoteVaultKeyDerivationMetadata,
-  RemoteVaultKeyWrapMetadata,
-  RemoteVaultKeyEnvelope,
-} from "@synch/vault-crypto/types";
-
-export interface RemoteVaultKeyWrapper {
-  kind: "password" | "member" | "recovery";
-  envelope: RemoteVaultKeyEnvelope;
-}
-
 export interface RemoteVaultRecord {
   id: string;
   organizationId: string;
@@ -19,20 +6,8 @@ export interface RemoteVaultRecord {
   createdAt: string;
 }
 
-export interface RemoteVaultKeyWrapperRecord {
-  id: string;
-  vaultId: string;
-  keyVersion: number;
-  kind: "password" | "member" | "recovery";
-  userId: string | null;
-  envelope: RemoteVaultKeyEnvelope;
-  createdAt: string;
-  revokedAt: string | null;
-}
-
 export interface RemoteVaultBootstrapResponse {
   vault: RemoteVaultRecord;
-  wrappers: RemoteVaultKeyWrapperRecord[];
 }
 
 export interface RemoteVaultSummaryResponse {

@@ -1,4 +1,3 @@
-import { createPasswordWrappedRemoteVaultKey, unwrapRemoteVaultKeyWithPassword, type RemoteVaultKeyEnvelope } from "@synch/vault-crypto";
 import type { SyncTokenResponse } from "@synch/sync-client/remote";
 import { testEmail } from "./server";
 
@@ -14,29 +13,25 @@ export async function signUp(baseUrl: string) {
 }
 
 export async function createVault(baseUrl: string, cookie: string) {
-  const password = "sync e2e vault password";
-  const wrapped = await createPasswordWrappedRemoteVaultKey(password);
   const headers = { "content-type": "application/json", origin: baseUrl, cookie };
   const response = await fetch(`${baseUrl}/v1/vaults`, {
     method: "POST", headers,
-    body: JSON.stringify({ name: crypto.randomUUID(), initialWrapper: { kind: "password", envelope: wrapped.envelope } }),
+    body: JSON.stringify({ name: crypto.randomUUID() }),
   });
   if (!response.ok) throw new Error(`Create vault: ${response.status} ${await response.text()}`);
   const { vault } = await response.json() as { vault: { id: string } };
-  return attachVault(baseUrl, cookie, vault.id, wrapped.remoteVaultKey);
+  return attachVault(baseUrl, cookie, vault.id);
 }
 
 /** Reattach a local test client to an already provisioned vault. */
-export function attachVault(baseUrl: string, cookie: string, vaultId: string, key: Uint8Array) {
-  const password = "sync e2e vault password";
+export function attachVault(baseUrl: string, cookie: string, vaultId: string) {
   const headers = { "content-type": "application/json", origin: baseUrl, cookie };
+  // Vaults are no longer key-wrapped; access follows organization membership.
+  const key = new Uint8Array(0);
   return {
     id: vaultId, key,
     async unlock() {
-      const response = await fetch(`${baseUrl}/v1/vaults/${vaultId}/bootstrap`, { headers });
-      if (!response.ok) throw new Error(`Bootstrap: ${response.status}`);
-      const body = await response.json() as { wrappers: { envelope: RemoteVaultKeyEnvelope }[] };
-      return unwrapRemoteVaultKeyWithPassword(password, body.wrappers[0].envelope);
+      return key;
     },
     async token(localVaultId: string): Promise<SyncTokenResponse> {
       const response = await fetch(`${baseUrl}/v1/sync/token`, {

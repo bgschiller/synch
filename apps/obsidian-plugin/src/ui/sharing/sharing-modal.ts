@@ -2,7 +2,6 @@ import { App, Modal, Notice, Setting, setIcon, type ButtonComponent } from "obsi
 import {
   SharingManager,
   type SharingVault,
-  type VaultKeyRequest,
   type RemoteVaultSession,
 } from "@synch/sync-client/remote";
 import { t } from "../../i18n";
@@ -92,7 +91,7 @@ export class SharingModal extends Modal {
         vaultCount += vaults.length;
         for (const vault of vaults) {
           try {
-            await this.renderVault(body, vault, organization.sharing.enabled, organization.name);
+            this.renderVault(body, vault, organization.sharing.enabled, organization.name);
             if (this.closed) return;
           } catch (error) {
             body.createEl("p", {
@@ -112,12 +111,12 @@ export class SharingModal extends Modal {
       stopLoading?.();
     }
   }
-  private async renderVault(
+  private renderVault(
     parent: HTMLElement,
     vault: SharingVault,
     canShare: boolean,
     organizationName: string,
-  ): Promise<void> {
+  ): void {
     const section = parent.createDiv({ cls: "synch-sharing-vault" });
     const header = section.createDiv({ cls: "synch-sharing-vault-header" });
     setIcon(header.createSpan({ cls: "synch-sharing-vault-icon" }), "vault");
@@ -132,59 +131,6 @@ export class SharingModal extends Modal {
     const access = section.createDiv({ cls: "synch-sharing-panel" });
     if (!canShare) {
       access.createEl("p", { text: t(vault.shared ? "sharing.suspended" : "sharing.unavailable"), cls: "synch-sharing-empty" });
-      return;
     }
-    if (vault.status === "pending_key") {
-      access.createEl("p", { text: t("sharing.connectToSetUp"), cls: "synch-sharing-hint" });
-      return;
-    }
-    const requests = await this.manager.client.requests(vault.id);
-    if (this.closed) return;
-    let visibleRequests = 0;
-    for (const request of requests) {
-      if (request.userId !== this.manager.userId && request.status === "pending" && vault.canManage) {
-        visibleRequests++;
-        this.approvalForm(access, vault, request);
-      }
-    }
-    if (!visibleRequests && vault.status === "active") {
-      const empty = access.createDiv({ cls: "synch-sharing-empty" });
-      setIcon(empty.createSpan(), "users");
-      empty.createEl("p", { text: t("sharing.noRequests") });
-    }
-  }
-  private approvalForm(
-    parent: HTMLElement,
-    vault: SharingVault,
-    request: VaultKeyRequest,
-    key?: Uint8Array,
-  ): void {
-    const member = vault.members.find(
-      (member) => member.userId === request.userId,
-    );
-    const setting = new Setting(parent)
-      .setName(
-        `${member?.email ?? request.userId} · ${t(request.purpose === "recovery" ? "sharing.recovery" : "sharing.setup")}`,
-      )
-      .setDesc(t(key ? "sharing.approveHelp" : "sharing.connectFirst"));
-    if (!key) return;
-    let code = "";
-    setting.addText((text) =>
-      text.setPlaceholder(t("sharing.code")).onChange((value) => {
-        code = value;
-      }),
-    );
-    setting.addButton((button) => {
-      button.setButtonText(t("sharing.approve")).setDisabled(this.busy).onClick(() => {
-        void this.run(async () => {
-          await this.manager.approve(request, key, code);
-          new Notice(t("sharing.approved", {
-            member: member?.email ?? request.userId,
-            vault: vault.name,
-          }), 6000);
-        }, button);
-      });
-      this.controls.push(button);
-    });
   }
 }

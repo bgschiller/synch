@@ -173,54 +173,6 @@ export class ConnectVaultModal extends Modal {
       });
       return;
     }
-    if (!item.sharingEnabled) {
-      this.bodyEl.createEl("p", { text: t("sharing.suspended"), cls: "synch-connect-notice" });
-      return;
-    }
-    let request;
-    try {
-      request = await this.flow.localRequest(vault.id);
-    } catch (error) {
-      this.renderRestart(vault.id);
-      throw error;
-    }
-    if (request && request.status !== "canceled" && request.expiresAt > Date.now()) {
-      if (request.status === "approved" || request.status === "completed") {
-        this.bodyEl.createEl("p", { text: t("vault.accessApproved"), cls: "synch-connect-hint" });
-        this.primary(t("vault.connect"), async () => {
-          this.connected = await this.flow.connect(vault.id);
-        });
-        return;
-      }
-      this.bodyEl.createEl("h3", { text: t("sharing.waiting"), cls: "synch-connect-status" });
-      this.bodyEl.createEl("p", { text: t("sharing.yourCode"), cls: "synch-connect-hint" });
-      const code = await this.flow.verificationCode(vault.id);
-      this.bodyEl.createEl("code", { text: code, cls: "synch-connect-code" });
-      this.addButton(this.row("synch-connect-secondary"), t("vault.copyCode"), async () => {
-        await navigator.clipboard.writeText(code);
-      });
-      this.primary(t("vault.checkApproval"), () => this.refresh());
-      const help = this.bodyEl.createEl("details", { cls: "synch-connect-help" });
-      help.createEl("summary", { text: t("vault.requestHelp") });
-      this.renderRestart(vault.id, help);
-      return;
-    }
-    if (request) {
-      this.renderRestart(vault.id);
-      return;
-    }
-    this.bodyEl.createEl("p", { text: t("sharing.requestHelp"), cls: "synch-connect-hint" });
-    this.primary(t("sharing.request"), async () => {
-      await this.flow.request(vault.id);
-      await this.refresh();
-    });
-  }
-
-  private renderRestart(vaultId: string, parent = this.bodyEl): void {
-    parent.createEl("p", { text: t("sharing.restartHelp"), cls: "synch-connect-hint" });
-    this.addButton(this.row("synch-connect-secondary", parent), t("sharing.restart"), async () => {
-      await this.flow.request(vaultId, true);
-      await this.refresh();
-    });
+    this.bodyEl.createEl("p", { text: t("sharing.suspended"), cls: "synch-connect-notice" });
   }
 }

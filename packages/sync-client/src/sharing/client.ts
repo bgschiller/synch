@@ -1,7 +1,3 @@
-import type {
-  KeyTransferEnvelope,
-  RemoteVaultKeyEnvelope,
-} from "@synch/vault-crypto";
 import {
   ApiRequestError,
   createApiRequestError,
@@ -45,21 +41,8 @@ export interface SharingOrganization {
   sharing: { enabled: boolean; memberLimit: number };
   vaults: SharingVault[];
 }
-export interface VaultKeyRequest {
-  id: string;
-  vaultId: string;
-  userId: string;
-  accessVersion: number;
-  publicKey: string;
-  purpose: "enrollment" | "recovery";
-  status: "pending" | "approved" | "completed" | "canceled";
-  envelopeJson: string | null;
-  approvedBy: string | null;
-  createdAt: number;
-  expiresAt: number;
-}
 
-/** Captures one authenticated account and server for the lifetime of a key transfer. */
+/** Captures one authenticated account and server for organization listing. */
 export class SharingClient {
   readonly apiBaseUrl: string;
   constructor(
@@ -92,67 +75,13 @@ export class SharingClient {
       ),
     );
   }
-  async requests(vaultId: string): Promise<VaultKeyRequest[]> {
-    return (
-      await this.request<{ requests: VaultKeyRequest[] }>(this.path(vaultId))
-    ).requests;
-  }
-  getRequest(vaultId: string, id: string): Promise<VaultKeyRequest> {
-    return this.request(`${this.path(vaultId)}/${encodeURIComponent(id)}`);
-  }
-  start(
-    vaultId: string,
-    id: string,
-    publicKey: string,
-  ): Promise<VaultKeyRequest> {
-    return this.request(this.path(vaultId), "POST", { id, publicKey });
-  }
-  async approve(
-    request: VaultKeyRequest,
-    envelope: KeyTransferEnvelope,
-  ): Promise<void> {
-    await this.request(
-      `${this.path(request.vaultId)}/${encodeURIComponent(request.id)}/approve`,
-      "POST",
-      { envelope },
-    );
-  }
-  async complete(
-    request: VaultKeyRequest,
-    envelope: RemoteVaultKeyEnvelope,
-  ): Promise<void> {
-    await this.request(
-      `${this.path(request.vaultId)}/${encodeURIComponent(request.id)}/complete`,
-      "POST",
-      { envelope },
-    );
-  }
-  async changePassword(
-    vaultId: string,
-    envelope: RemoteVaultKeyEnvelope,
-  ): Promise<void> {
-    await this.request(
-      `/v1/vaults/${encodeURIComponent(vaultId)}/password-wrapper`,
-      "PUT",
-      { envelope },
-    );
-  }
-  private path(vaultId: string) {
-    return `/v1/vaults/${encodeURIComponent(vaultId)}/key-requests`;
-  }
-  private async request<T>(
-    path: string,
-    method = "GET",
-    body?: unknown,
-  ): Promise<T> {
+  private async request<T>(path: string): Promise<T> {
     const response = await this.http.request({
       url: `${this.apiBaseUrl}${path}`,
-      method,
+      method: "GET",
       headers: {
         authorization: `Bearer ${this.token}`,
-        ...(body === undefined ? {} : { "content-type": "application/json" }),
       },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     if (response.status < 200 || response.status >= 300)
       throw createApiRequestError(response, "Sharing request failed");

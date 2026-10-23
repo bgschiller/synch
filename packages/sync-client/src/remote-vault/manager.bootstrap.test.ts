@@ -39,7 +39,6 @@ describe("RemoteVaultManager bootstrap", () => {
           vaultId: string,
         ): Promise<RemoteVaultBootstrapResponse> => ({
           vault: remoteVaultSummary({ id: vaultId }),
-          wrappers: [],
         }),
       },
     });
@@ -64,7 +63,6 @@ describe("RemoteVaultManager bootstrap", () => {
       remoteVaultClient: {
         getRemoteVaultBootstrap: async () => ({
           vault: remoteVaultSummary(),
-          wrappers: [],
         }),
       },
     });

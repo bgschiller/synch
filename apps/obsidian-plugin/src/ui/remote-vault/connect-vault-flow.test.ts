@@ -14,9 +14,6 @@ function setup() {
   };
   const manager = {
     client: { organizations: vi.fn(async () => [organization]) },
-    localRequest: vi.fn(async () => null),
-    recipientVerificationCode: vi.fn(async () => "verified-code"),
-    begin: vi.fn(async () => {}), restart: vi.fn(async () => {}),
   };
   const deps = {
     listLegacyVaults: vi.fn(async () => [{
@@ -47,7 +44,6 @@ describe("vault connection safety", () => {
     await expect(flow.connect("legacy")).resolves.toBe(confirmed);
     expect(deps.confirmPersonalVault).toHaveBeenCalledOnce();
     expect(deps.bootstrap).toHaveBeenCalledTimes(confirmed ? 1 : 0);
-    expect(manager.begin).not.toHaveBeenCalled();
   });
 
   it.each([401, 403, 404, 503])("does not fall back for an ordinary API error (%s)", async (status) => {
@@ -107,13 +103,6 @@ describe("vault connection safety", () => {
     );
   });
 
-  it("does not bootstrap until administrator approval finishes", async () => {
-    const { flow, deps, vault } = setup();
-    vault.status = "pending_key";
-    await expect(flow.connect("vault")).rejects.toThrow(t("sharing.waiting"));
-    expect(deps.bootstrap).not.toHaveBeenCalled();
-  });
-
   it("fails closed when fresh access data cannot be loaded", async () => {
     const { flow, manager, deps } = setup();
     await flow.list();
@@ -141,11 +130,11 @@ describe("vault connection safety", () => {
     expect(deps.bootstrap).not.toHaveBeenCalled();
   });
 
-  it("shows pending grants and excludes revoked or unassigned vaults", async () => {
+  it("excludes pending_key, revoked, and unassigned vaults", async () => {
     const { flow, organization, vault } = setup();
     vault.status = "pending_key";
     organization.vaults.push({ ...vault, id: "revoked", status: "revoked" }, { ...vault, id: "unassigned", status: null });
-    expect(await flow.list()).toEqual([{ vault, organizationName: "Team", sharingEnabled: true }]);
+    expect(await flow.list()).toEqual([]);
   });
 
   it("blocks suspended shared vaults even for their owner", async () => {
@@ -154,12 +143,5 @@ describe("vault connection safety", () => {
     vault.personal = true;
     await expect(flow.connect("vault")).rejects.toThrow(t("sharing.suspended"));
     expect(deps.bootstrap).not.toHaveBeenCalled();
-  });
-
-  it("does not request approval from a nonempty invited vault", async () => {
-    const { flow, deps, manager } = setup();
-    deps.hasExistingFiles.mockResolvedValue(true);
-    await expect(flow.request("vault")).rejects.toThrow(t("vault.invitedNeedsEmpty"));
-    expect(manager.begin).not.toHaveBeenCalled();
   });
 });

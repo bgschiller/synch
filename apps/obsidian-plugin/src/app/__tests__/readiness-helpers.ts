@@ -66,7 +66,6 @@ export function mockOnlineReadinessRequests(): void {
               activeKeyVersion: 1,
               createdAt: "2026-04-22T00:00:00.000Z",
             },
-            wrappers: [],
           },
         };
       }
