@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createPasswordWrappedRemoteVaultKey } from "@synch/vault-crypto";
 import type { StoredRemoteVaultKeySecret } from "./types";
 import type {
   RemoteVaultBootstrapResponse,
@@ -29,13 +28,6 @@ describe("RemoteVaultManager bootstrap", () => {
 
   it("connects the selected remote vault", async () => {
     const savedVaults: Array<StoredRemoteVaultKeySecret | null> = [];
-    const createdWrapper = await createPasswordWrappedRemoteVaultKey("vault-password", {
-      kdfOverrides: {
-        memoryKiB: 8,
-        iterations: 1,
-        parallelism: 1,
-      },
-    });
 
     const manager = createManager({
       savedVaults,
@@ -51,30 +43,18 @@ describe("RemoteVaultManager bootstrap", () => {
           vaultId: string,
         ): Promise<RemoteVaultBootstrapResponse> => ({
           vault: remoteVaultSummary({ id: vaultId }),
-          wrappers: [
-            {
-              id: "wrapper-1",
-              vaultId,
-              keyVersion: 1,
-              kind: "password",
-              userId: "user-1",
-              envelope: createdWrapper.envelope,
-              createdAt: "2026-04-22T00:00:00.000Z",
-              revokedAt: null,
-            },
-          ],
+          wrappers: [],
         }),
       },
     });
 
     const summary = await manager.bootstrapRemoteVault({
       vaultId: "vault-remote",
-      password: "vault-password",
     });
 
     expect(summary.vaultId).toBe("vault-remote");
     expect(summary.vaultName).toBe("Remote");
-    expect(savedVaults[savedVaults.length - 1]?.remoteVaultKey).toBeInstanceOf(Uint8Array);
+    expect(savedVaults).toEqual([]);
     expect(manager.getRemoteVaultStatus()).toEqual({
       state: "loaded",
       label: "Remote",
@@ -85,74 +65,23 @@ describe("RemoteVaultManager bootstrap", () => {
     const savedVaults: Array<StoredRemoteVaultKeySecret | null> = [];
     const refreshUi = vi.fn();
     const notify = vi.fn();
-    const wrapper = await createPasswordWrappedRemoteVaultKey("vault-password", {
-      kdfOverrides: { memoryKiB: 8, iterations: 1, parallelism: 1 },
-    });
     const manager = createManager({
       savedVaults, refreshUi, notify,
       remoteVaultClient: {
         getRemoteVaultBootstrap: async () => ({
           vault: remoteVaultSummary(),
-          wrappers: [{
-            id: "wrapper", vaultId: "vault-remote", keyVersion: 1,
-            kind: "password", userId: "user-1", envelope: wrapper.envelope,
-            createdAt: "2026-04-22T00:00:00.000Z", revokedAt: null,
-          }],
+          wrappers: [],
         }),
       },
     });
     const beforeActivate = vi.fn(async () => { throw new Error("Local vault is no longer empty"); });
     await expect(manager.bootstrapRemoteVault({
-      vaultId: "vault-remote", password: "vault-password",
+      vaultId: "vault-remote",
     }, beforeActivate)).rejects.toThrow("Local vault is no longer empty");
     expect(beforeActivate).toHaveBeenCalledOnce();
     expect(manager.getActiveSession()).toBeNull();
     expect(savedVaults).toEqual([]);
     expect(refreshUi).not.toHaveBeenCalled();
     expect(notify).not.toHaveBeenCalled();
-  });
-
-  it("reports a friendly error when the password cannot unwrap the vault key", async () => {
-    const savedVaults: Array<StoredRemoteVaultKeySecret | null> = [];
-    const createdWrapper = await createPasswordWrappedRemoteVaultKey("vault-password", {
-      kdfOverrides: {
-        memoryKiB: 8,
-        iterations: 1,
-        parallelism: 1,
-      },
-    });
-
-    const manager = createManager({
-      savedVaults,
-      remoteVaultClient: {
-        getRemoteVaultBootstrap: async (
-          _apiBaseUrl: string,
-          _sessionToken: string,
-          vaultId: string,
-        ): Promise<RemoteVaultBootstrapResponse> => ({
-          vault: remoteVaultSummary({ id: vaultId }),
-          wrappers: [
-            {
-              id: "wrapper-1",
-              vaultId,
-              keyVersion: 1,
-              kind: "password",
-              userId: "user-1",
-              envelope: createdWrapper.envelope,
-              createdAt: "2026-04-22T00:00:00.000Z",
-              revokedAt: null,
-            },
-          ],
-        }),
-      },
-    });
-
-    await expect(
-      manager.bootstrapRemoteVault({
-        vaultId: "vault-remote",
-        password: "wrong-password",
-      }),
-    ).rejects.toThrow();
-    expect(savedVaults).toEqual([]);
   });
 });

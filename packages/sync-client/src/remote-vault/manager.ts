@@ -1,30 +1,25 @@
-import {
-  createPasswordWrappedRemoteVaultKey,
-  unwrapRemoteVaultKeyWithPassword,
-  validateVaultPassword,
-  type VaultPasswordValidation,
-} from "@synch/vault-crypto";
 import { RemoteVaultClient } from "./client";
 import { OrganizationApiUnavailableError } from "../sharing/client";
 import type {
   RemoteVaultBootstrapResponse,
-  RemoteVaultKeyWrapperRecord,
   RemoteVaultRecord,
   RemoteVaultSession,
   RemoteVaultSessionSummary,
   StoredRemoteVaultKeySecret,
 } from "./types";
 
+// Identity crypto ignores the remote vault key entirely. We still thread a
+// constant 32-byte value through the session so the getRemoteVaultKey() plumbing
+// keeps compiling until Stage 2 removes it.
+const IDENTITY_REMOTE_VAULT_KEY = new Uint8Array(32);
+
 export interface CreateRemoteVaultInput {
   organizationId?: string;
   name: string;
-  password: string;
-  confirmPassword: string;
 }
 
 export interface BootstrapRemoteVaultInput {
   vaultId: string;
-  password: string;
 }
 
 // Vault state for UI display. Label formatting lives in the host app layer.
@@ -40,13 +35,7 @@ export type RemoteVaultNoticeEvent =
   | { type: "created_connected"; label: string }
   | { type: "connected"; label: string };
 
-export type RemoteVaultInputFailure =
-  | { kind: "name_required" }
-  | { kind: "password_mismatch" }
-  | {
-      kind: "invalid_password";
-      validation: Extract<VaultPasswordValidation, { ok: false }>;
-    };
+export type RemoteVaultInputFailure = { kind: "name_required" };
 
 // Carries input validation failures as codes. The user-facing message is
 // formatted by the host display layer.
@@ -62,6 +51,9 @@ export interface RemoteVaultManagerDeps {
   getAuthSessionToken: () => string;
   hasAuthenticatedSession: () => boolean;
   getStoredRemoteVaultId: () => string | null;
+  // TODO(identity): remove both key-secret hooks in Stage 2. They are unused by
+  // identity crypto; saveStoredRemoteVaultKeySecret(null) still clears stale
+  // state on disconnect.
   getStoredRemoteVaultKeySecret: () => StoredRemoteVaultKeySecret | null;
   saveStoredRemoteVaultKeySecret: (
     vault: StoredRemoteVaultKeySecret | null,
@@ -85,7 +77,7 @@ export class RemoteVaultManager {
     }
 
     const storedVaultId = this.deps.getStoredRemoteVaultId();
-    if (storedVaultId && this.deps.getStoredRemoteVaultKeySecret()) {
+    if (storedVaultId) {
       return { state: "stored_inactive" };
     }
 
@@ -101,11 +93,7 @@ export class RemoteVaultManager {
   }
 
   hasConnectedRemoteVault(): boolean {
-    return (
-      this.session !== null ||
-      (this.deps.getStoredRemoteVaultId() !== null &&
-        this.deps.getStoredRemoteVaultKeySecret() !== null)
-    );
+    return this.session !== null || this.deps.getStoredRemoteVaultId() !== null;
   }
 
   clearSession(): void {
@@ -130,8 +118,7 @@ export class RemoteVaultManager {
     }
 
     const remoteVaultId = this.deps.getStoredRemoteVaultId();
-    const storedVaultKey = this.deps.getStoredRemoteVaultKeySecret();
-    if (!remoteVaultId || !storedVaultKey) {
+    if (!remoteVaultId) {
       return;
     }
 
@@ -149,7 +136,7 @@ export class RemoteVaultManager {
         activeKeyVersion: bootstrap.vault.activeKeyVersion,
         bootstrappedAt: new Date().toISOString(),
       },
-      remoteVaultKey: storedVaultKey.remoteVaultKey,
+      remoteVaultKey: IDENTITY_REMOTE_VAULT_KEY,
     };
     this.deps.refreshUi();
   }
@@ -182,17 +169,12 @@ export class RemoteVaultManager {
     this.ensureAuthenticated();
     validateCreateInput(input);
 
-    const wrapper = await createPasswordWrappedRemoteVaultKey(input.password);
     const { vault } = await this.remoteVaultClient.createRemoteVault(
       this.deps.getApiBaseUrl(),
       this.deps.getAuthSessionToken(),
       {
         name: input.name.trim(),
         ...(input.organizationId ? { organizationId: input.organizationId } : {}),
-        initialWrapper: {
-          kind: "password",
-          envelope: wrapper.envelope,
-        },
       },
     );
 
@@ -201,7 +183,7 @@ export class RemoteVaultManager {
       this.deps.getAuthSessionToken(),
       vault.id,
     );
-    await this.loadBootstrapRemoteVaultSession(bootstrap, input.password);
+    await this.loadBootstrapRemoteVaultSession(bootstrap);
 
     const summary = this.requireSession().summary;
     this.notify({ type: "created_connected", label: summary.vaultName });
@@ -219,17 +201,12 @@ export class RemoteVaultManager {
       throw new Error("Vault selection is required.");
     }
 
-    const password = input.password;
-    if (!password) {
-      throw new Error("Password is required.");
-    }
-
     const bootstrap = await this.remoteVaultClient.getRemoteVaultBootstrap(
       this.deps.getApiBaseUrl(),
       this.deps.getAuthSessionToken(),
       vaultId,
     );
-    await this.loadBootstrapRemoteVaultSession(bootstrap, password, beforeActivate);
+    await this.loadBootstrapRemoteVaultSession(bootstrap, beforeActivate);
 
     const summary = this.requireSession().summary;
     this.notify({ type: "connected", label: summary.vaultName });
@@ -238,22 +215,14 @@ export class RemoteVaultManager {
 
   private async loadBootstrapRemoteVaultSession(
     bootstrap: RemoteVaultBootstrapResponse,
-    password: string,
     beforeActivate?: () => Promise<void>,
   ): Promise<void> {
-    const wrapper = findPasswordWrapper(bootstrap.wrappers);
-    const remoteVaultKey = await unwrapRemoteVaultKey(password, wrapper.envelope, { vaultId: bootstrap.vault.id, userId: wrapper.userId ?? "" });
-    // Network and password derivation may take time. Let the host revalidate
-    // local-vault safety and account identity before storing a key or syncing.
-    try {
-      await beforeActivate?.();
-    } catch (error) {
-      remoteVaultKey.fill(0);
-      throw error;
-    }
+    // Let the host revalidate local-vault safety and account identity before
+    // activating the session.
+    await beforeActivate?.();
     const summary: RemoteVaultSessionSummary = {
       vaultId: bootstrap.vault.id,
-        organizationId: bootstrap.vault.organizationId,
+      organizationId: bootstrap.vault.organizationId,
       vaultName: bootstrap.vault.name,
       activeKeyVersion: bootstrap.vault.activeKeyVersion,
       bootstrappedAt: new Date().toISOString(),
@@ -261,11 +230,8 @@ export class RemoteVaultManager {
 
     this.session = {
       summary,
-      remoteVaultKey,
+      remoteVaultKey: IDENTITY_REMOTE_VAULT_KEY,
     };
-    await this.deps.saveStoredRemoteVaultKeySecret({
-      remoteVaultKey,
-    });
     this.deps.refreshUi();
   }
 
@@ -288,63 +254,10 @@ export class RemoteVaultManager {
   }
 }
 
-async function unwrapRemoteVaultKey(
-  password: string,
-  envelope: RemoteVaultBootstrapResponse["wrappers"][number]["envelope"],
-  binding: { vaultId: string; userId: string },
-): Promise<Uint8Array> {
-  try {
-    return await unwrapRemoteVaultKeyWithPassword(password, envelope, binding);
-  } catch (error) {
-    if (isCryptoOperationError(error)) {
-      throw new Error("Unable to unlock vault. Check the password and try again.");
-    }
-
-    throw error;
-  }
-}
-
-function isCryptoOperationError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "OperationError";
-}
-
 function validateCreateInput(input: CreateRemoteVaultInput): void {
   if (!input.name.trim()) {
     throw new RemoteVaultInputError({ kind: "name_required" });
   }
-
-  const passwordValidation = validateVaultPassword(input.password);
-  if (!passwordValidation.ok) {
-    throw new RemoteVaultInputError({
-      kind: "invalid_password",
-      validation: passwordValidation,
-    });
-  }
-
-  if (input.password !== input.confirmPassword) {
-    throw new RemoteVaultInputError({ kind: "password_mismatch" });
-  }
-}
-
-function findPasswordWrapper(
-  wrappers: RemoteVaultKeyWrapperRecord[],
-): RemoteVaultKeyWrapperRecord {
-  const wrapper =
-    wrappers.find(
-      (candidate) =>
-        candidate.kind === "password" &&
-        candidate.userId !== null &&
-        candidate.revokedAt === null,
-    ) ??
-    wrappers.find(
-      (candidate) => candidate.kind === "password" && candidate.revokedAt === null,
-    );
-
-  if (!wrapper) {
-    throw new Error("No active password wrapper found for this vault.");
-  }
-
-  return wrapper;
 }
 
 function formatVaultLabel(vault: Pick<RemoteVaultSessionSummary, "vaultId" | "vaultName">): string {

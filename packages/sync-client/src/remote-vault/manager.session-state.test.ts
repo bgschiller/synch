@@ -37,13 +37,9 @@ describe("RemoteVaultManager session state", () => {
 
   it("restores a persisted vault session after sign-in", async () => {
     const refreshUi = vi.fn();
-    const storedVault: StoredRemoteVaultKeySecret = {
-      remoteVaultKey: new Uint8Array([7, 8, 9]),
-    };
 
     const manager = createManager({
       storedVaultId: "vault-restored",
-      storedVault,
       refreshUi,
       remoteVaultClient: {
         getRemoteVaultBootstrap: async (): Promise<RemoteVaultBootstrapResponse> => ({
@@ -63,7 +59,7 @@ describe("RemoteVaultManager session state", () => {
 
     expect(manager.getActiveSession()?.summary.vaultId).toBe("vault-restored");
     expect(manager.getActiveSession()?.summary.vaultName).toBe("Restored");
-    expect(manager.getActiveSession()?.remoteVaultKey).toEqual(storedVault.remoteVaultKey);
+    expect(manager.getActiveSession()?.remoteVaultKey).toEqual(new Uint8Array(32));
     expect(refreshUi).toHaveBeenCalled();
   });
 });

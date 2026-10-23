@@ -8,7 +8,6 @@ import { SharingClient } from "../sharing/client";
 import type {
   CreateRemoteVaultResponse,
   RemoteVaultBootstrapResponse,
-  RemoteVaultKeyWrapper,
   RemoteVaultSummaryResponse,
 } from "./types";
 
@@ -32,7 +31,7 @@ export class RemoteVaultClient {
   async createRemoteVault(
     apiBaseUrl: string,
     sessionToken: string,
-    input: { name: string; organizationId?: string; initialWrapper: RemoteVaultKeyWrapper },
+    input: { name: string; organizationId?: string },
   ): Promise<CreateRemoteVaultResponse> {
     return await this.requestJson<CreateRemoteVaultResponse>(
       `${stripTrailingSlash(apiBaseUrl)}/v1/vaults`,
