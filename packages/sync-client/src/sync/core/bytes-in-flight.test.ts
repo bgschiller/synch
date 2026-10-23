@@ -112,7 +112,6 @@ describe("BytesInFlightBudget", () => {
 
     const service = new SyncLocalReconcileService({
       getSyncStore: () => store,
-      getRemoteVaultKey: () => new Uint8Array(32),
       shouldSyncPath: () => true,
       scanner: {
         async listFiles() {

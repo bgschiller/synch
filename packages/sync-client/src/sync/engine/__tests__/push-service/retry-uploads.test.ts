@@ -11,7 +11,6 @@ import {
   createToken,
   encryptMutationMetadata,
   ignoreProgress,
-  TEST_VAULT_KEY,
 } from "./helpers";
 
 describe("SyncPushService retry uploads", () => {
@@ -246,7 +245,6 @@ function createRetryUploadService(
     contentRuntime: createTestContentRuntime(),
     getSyncToken: async () => createToken(),
     getSyncStore: () => store,
-    getRemoteVaultKey: () => TEST_VAULT_KEY,
     fileReader: {
       async readBytes(path) {
         const bytes = files[path];

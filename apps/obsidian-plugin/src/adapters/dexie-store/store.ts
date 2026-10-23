@@ -525,7 +525,6 @@ export class DexieSyncStore implements SyncStore {
 
   async applyAcceptedPushBatch(
     accepted: AcceptedPushMutationRow[],
-    options: { remoteVaultKey: Uint8Array },
   ): Promise<void> {
     if (accepted.length === 0) {
       return;
@@ -540,7 +539,6 @@ export class DexieSyncStore implements SyncStore {
           planAcceptedPushApply(
             initialRows[index] ?? createEmptyEntryRecord(item.mutation.entryId),
             item,
-            options.remoteVaultKey,
           ),
         ),
       );

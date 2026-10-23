@@ -13,7 +13,6 @@ import {
   createToken,
   encryptMutationMetadata,
   ignoreProgress,
-  TEST_VAULT_KEY,
   unusedBlobClient,
 } from "./helpers";
 
@@ -53,7 +52,6 @@ describe("SyncPushService drain: batching", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes() {
           return body;
@@ -127,7 +125,6 @@ describe("SyncPushService drain: batching", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       prepareConcurrency: 2,
       fileReader: {
         async readBytes(path) {
@@ -220,7 +217,6 @@ describe("SyncPushService drain: batching", () => {
         contentRuntime: createTestContentRuntime(),
         getSyncToken: async () => createToken(),
         getSyncStore: () => store,
-        getRemoteVaultKey: () => TEST_VAULT_KEY,
         fileReader: { async readBytes() { return body; } },
         blobClient: {
           async uploadBlob(_vault, blobId) {
@@ -316,7 +312,6 @@ describe("SyncPushService drain: batching", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => currentStore,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes() {
           throw new Error("delete mutations should not read bytes");

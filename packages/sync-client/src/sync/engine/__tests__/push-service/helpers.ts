@@ -9,9 +9,6 @@ import {
   type CommitMutationPayload,
 } from "../../../remote/realtime-client";
 
-export const TEST_VAULT_KEY = new Uint8Array(
-  Array.from({ length: 32 }, (_, index) => index + 1),
-);
 
 export function createToken(): SyncTokenResponse {
   return {
@@ -112,7 +109,6 @@ export async function encryptMutationMetadata(input: {
 }) {
   const hash = input.op === "delete" ? null : requireHash(input.hash);
   return await encryptSyncMetadata(
-    TEST_VAULT_KEY,
     {
       path: input.path,
       hash,

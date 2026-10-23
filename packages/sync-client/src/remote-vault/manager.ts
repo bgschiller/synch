@@ -5,13 +5,7 @@ import type {
   RemoteVaultRecord,
   RemoteVaultSession,
   RemoteVaultSessionSummary,
-  StoredRemoteVaultKeySecret,
 } from "./types";
-
-// Identity crypto ignores the remote vault key entirely. We still thread a
-// constant 32-byte value through the session so the getRemoteVaultKey() plumbing
-// keeps compiling until Stage 2 removes it.
-const IDENTITY_REMOTE_VAULT_KEY = new Uint8Array(32);
 
 export interface CreateRemoteVaultInput {
   organizationId?: string;
@@ -51,13 +45,8 @@ export interface RemoteVaultManagerDeps {
   getAuthSessionToken: () => string;
   hasAuthenticatedSession: () => boolean;
   getStoredRemoteVaultId: () => string | null;
-  // TODO(identity): remove both key-secret hooks in Stage 2. They are unused by
-  // identity crypto; saveStoredRemoteVaultKeySecret(null) still clears stale
-  // state on disconnect.
-  getStoredRemoteVaultKeySecret: () => StoredRemoteVaultKeySecret | null;
-  saveStoredRemoteVaultKeySecret: (
-    vault: StoredRemoteVaultKeySecret | null,
-  ) => Promise<void>;
+  /** Persists the connected vault id so the session can be restored next launch. */
+  saveStoredRemoteVaultId?: (vaultId: string) => Promise<void>;
   refreshUi: () => void;
   notify: (event: RemoteVaultNoticeEvent) => void;
   remoteVaultClient: RemoteVaultClient;
@@ -104,7 +93,6 @@ export class RemoteVaultManager {
   async disconnectRemoteVault(options: { notify?: boolean } = {}): Promise<void> {
     const vault = this.session?.summary ?? this.deps.getStoredRemoteVaultId();
     this.session = null;
-    await this.deps.saveStoredRemoteVaultKeySecret(null);
     this.deps.refreshUi();
 
     if (vault && options.notify !== false) {
@@ -136,7 +124,6 @@ export class RemoteVaultManager {
         activeKeyVersion: bootstrap.vault.activeKeyVersion,
         bootstrappedAt: new Date().toISOString(),
       },
-      remoteVaultKey: IDENTITY_REMOTE_VAULT_KEY,
     };
     this.deps.refreshUi();
   }
@@ -230,8 +217,8 @@ export class RemoteVaultManager {
 
     this.session = {
       summary,
-      remoteVaultKey: IDENTITY_REMOTE_VAULT_KEY,
     };
+    await this.deps.saveStoredRemoteVaultId?.(summary.vaultId);
     this.deps.refreshUi();
   }
 

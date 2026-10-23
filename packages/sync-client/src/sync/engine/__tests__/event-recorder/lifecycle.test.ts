@@ -8,7 +8,6 @@ import {
   decryptPendingMetadata,
   encryptTestMetadata,
   putTestBaseBlob,
-  TEST_VAULT_KEY,
 } from "./helpers";
 
 describe("SyncEventRecorder lifecycle", () => {
@@ -17,7 +16,6 @@ describe("SyncEventRecorder lifecycle", () => {
     const recorder = new SyncEventRecorder({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
     });
 
     await recorder.recordUpsert("Folder/file.md", encodeUtf8("draft v1"));
@@ -114,7 +112,6 @@ describe("SyncEventRecorder lifecycle", () => {
     const recorder = new SyncEventRecorder({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
     });
 
     const changed = await recorder.recordRename(
@@ -176,7 +173,6 @@ describe("SyncEventRecorder lifecycle", () => {
     const recorder = new SyncEventRecorder({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
     });
 
     const changed = await recorder.recordRename(

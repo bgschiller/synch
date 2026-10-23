@@ -10,7 +10,6 @@ import {
   type SyncVersionHistoryStore,
 } from "./version-history-service";
 
-const TEST_VAULT_KEY = new Uint8Array(Array.from({ length: 32 }, (_, index) => index + 1));
 
 describe("SyncVersionHistoryService", () => {
   it("does not request remote history for local-only entries", async () => {
@@ -39,7 +38,6 @@ describe("SyncVersionHistoryService", () => {
   it("lists server deleted entries as decrypted pages", async () => {
     const store = createTestSyncStore();
     const encryptedMetadata = await encryptSyncMetadata(
-      TEST_VAULT_KEY,
       {
         path: "Folder/deleted.md",
         hash: null,
@@ -93,7 +91,6 @@ describe("SyncVersionHistoryService", () => {
   it("restores deleted entries from their newest upsert version", async () => {
     const store = createTestSyncStore();
     const versionMetadata = await encryptSyncMetadata(
-      TEST_VAULT_KEY,
       {
         path: "Folder/deleted.md",
         hash: "hash-old",
@@ -359,7 +356,7 @@ describe("SyncVersionHistoryService", () => {
       body,
     });
     const blobClient = createBlobClient({
-      "blob-old": await encryptSyncBlob(TEST_VAULT_KEY, new TextEncoder().encode(body), {
+      "blob-old": await encryptSyncBlob(new TextEncoder().encode(body), {
         blobId: "blob-old",
       }),
     });
@@ -402,7 +399,7 @@ describe("SyncVersionHistoryService", () => {
       bytes,
     });
     const blobClient = createBlobClient({
-      "blob-old": await encryptSyncBlob(TEST_VAULT_KEY, bytes, {
+      "blob-old": await encryptSyncBlob(bytes, {
         blobId: "blob-old",
       }),
     });
@@ -464,7 +461,7 @@ describe("SyncVersionHistoryService", () => {
     });
     const service = createService(store, {
       blobClient: createBlobClient({
-        "blob-old": await encryptSyncBlob(TEST_VAULT_KEY, new TextEncoder().encode(body), {
+        "blob-old": await encryptSyncBlob(new TextEncoder().encode(body), {
           blobId: "blob-old",
         }),
       }),
@@ -590,7 +587,6 @@ describe("SyncVersionHistoryService", () => {
     const service = createService(store, {
       blobClient: createBlobClient({
         "blob-old": await encryptSyncBlob(
-          TEST_VAULT_KEY,
           new TextEncoder().encode("different body"),
           { blobId: "blob-old" },
         ),
@@ -754,7 +750,6 @@ function createService(
       expiresAt: Date.now() + 60_000,
     }),
     getStore: () => store,
-    getRemoteVaultKey: () => TEST_VAULT_KEY,
     blobClient: createBlobClient({}),
     withRealtimeSession: async (work) => await work(createRealtimeSession({})),
     runLocalMutationWork: async (work) => await work(),
@@ -829,7 +824,6 @@ async function createEntryVersion(input: {
     op: "upsert",
     blobId: "blob-old",
     encryptedMetadata: await encryptSyncMetadata(
-      TEST_VAULT_KEY,
       {
         path: input.path ?? "Folder/active.md",
         hash: await hashBytes(bytes),

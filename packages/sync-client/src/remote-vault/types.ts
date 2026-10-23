@@ -53,10 +53,4 @@ export interface RemoteVaultSessionSummary {
 
 export interface RemoteVaultSession {
   summary: RemoteVaultSessionSummary;
-  remoteVaultKey: Uint8Array;
-}
-
-/** Host-persisted vault key bytes. Credential storage stays in the host. */
-export interface StoredRemoteVaultKeySecret {
-  remoteVaultKey: Uint8Array;
 }

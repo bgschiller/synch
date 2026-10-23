@@ -148,11 +148,6 @@ export class SynchPluginController implements SynchSettingsController {
     getAuthSessionToken: () => this.authManager.getAuthSessionToken(),
     hasAuthenticatedSession: () => this.authManager.hasAuthenticatedSession(),
     getStoredRemoteVaultId: () => this.sessionStore.getStoredRemoteVaultId(),
-    getStoredRemoteVaultKeySecret: () =>
-      this.sessionStore.getStoredRemoteVaultKeySecret(),
-    saveStoredRemoteVaultKeySecret: async (vault) => {
-      await this.sessionStore.saveStoredRemoteVaultKeySecret(vault);
-    },
     refreshUi: () => {
       this.refreshUi();
     },
@@ -175,7 +170,6 @@ export class SynchPluginController implements SynchSettingsController {
     invalidateSyncToken: () => {
       this.clearSyncTokenState();
     },
-    getRemoteVaultKey: () => this.getActiveRemoteVaultKey(),
     getSyncFileRules: () => this.getSyncFileRules(),
     getVaultConfigSyncRules: () => this.getVaultConfigSyncRules(),
     getSyncIntervalMs: () => this.getSyncIntervalMs(),
@@ -289,7 +283,6 @@ export class SynchPluginController implements SynchSettingsController {
   async initialize(): Promise<void> {
     await this.pluginDataStore.initialize();
     await this.sessionStore.migrateLegacySecrets();
-    await this.sessionStore.loadStoredRemoteVaultKeySecret();
     await this.initializeSettings();
     await this.updateService.checkServerCompatibility();
     this.sessionStore.setStoredSyncConnection(
@@ -694,7 +687,6 @@ export class SynchPluginController implements SynchSettingsController {
       this.subscriptionService.clearSubscriptionStatus();
       this.clearSyncTokenState();
       this.remoteVaultManager.clearSession();
-      await this.sessionStore.saveStoredRemoteVaultKeySecret(null);
       await this.readinessCoordinator.resetSyncConnection();
       this.clearStorageIssue();
     }
@@ -826,15 +818,6 @@ export class SynchPluginController implements SynchSettingsController {
 
   private notifyError(error: unknown, contextKey: SynchErrorContextKey): void {
     new Notice(formatSynchErrorNotice(error, contextKey));
-  }
-
-  private getActiveRemoteVaultKey(): Uint8Array {
-    const session = this.remoteVaultManager.getActiveSession();
-    if (!session) {
-      throw new Error("Vault session is not loaded.");
-    }
-
-    return session.remoteVaultKey;
   }
 
   private async initializeSettings(): Promise<void> {

@@ -14,7 +14,6 @@ import {
   encryptTestBlob,
   hashText,
   ignoreProgress,
-  TEST_VAULT_KEY,
   type PullConflictSummary,
 } from "./helpers";
 
@@ -83,7 +82,6 @@ describe("SyncPullService failure rollback: preparation", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: createBlobClient({ blobs: {} }),
       onProgress: ignoreProgress,
@@ -204,7 +202,6 @@ describe("SyncPullService failure rollback: preparation", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: createBlobClient({
         blobs: {
@@ -303,7 +300,6 @@ describe("SyncPullService failure rollback: preparation", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: createBlobClient({
         blobs: {
@@ -412,7 +408,6 @@ describe("SyncPullService failure rollback: preparation", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: createBlobClient({
         blobs: {

@@ -5,7 +5,7 @@ import { createTestSyncStore } from "../../../../test-support/in-memory-sync-sto
 import { SyncPullService } from "../../pull-service";
 import {
   createCommit, createRealtimeSession, createToken, createVaultAdapter,
-  encryptRemoteMetadata, encryptTestBlob, hashText, TEST_VAULT_KEY,
+  encryptRemoteMetadata, encryptTestBlob, hashText,
 } from "./helpers";
 
 // Identity crypto stores blobs as plaintext, so the advertised blob size is the
@@ -39,7 +39,7 @@ async function fixture(options: { legacy?: boolean; budget?: number; advertisedS
   let failWrite = false;
   const service = new SyncPullService({
     contentRuntime: runtime, getSyncToken: async () => createToken(),
-    getSyncStore: () => store, getRemoteVaultKey: () => TEST_VAULT_KEY,
+    getSyncStore: () => store,
     prepareConcurrency: options.concurrency ?? 2,
     vaultAdapter: {
       ...adapter,

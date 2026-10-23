@@ -51,7 +51,6 @@ export class PullPendingMutationHandler {
     }
 
     const metadata = await decryptSyncMetadata(
-      this.deps.getRemoteVaultKey(),
       pending.encryptedMetadata,
       metadataContextFromPendingMutation(pending),
     );
@@ -238,7 +237,6 @@ export class PullPendingMutationHandler {
 
     reservation?.retain(cachedBase.encryptedBytes.byteLength * 8);
     const baseBytes = await decryptSyncBlob(
-      this.deps.getRemoteVaultKey(),
       cachedBase.encryptedBytes,
       { blobId: base.blobId },
     );
@@ -275,7 +273,6 @@ export class PullPendingMutationHandler {
           hash: mergedHash,
           path: finalPath,
           encryptedMetadata: await encryptSyncMetadata(
-            this.deps.getRemoteVaultKey(),
             {
               path: finalPath,
               hash: mergedHash,
@@ -314,10 +311,8 @@ export class PullPendingMutationHandler {
       return null;
     }
 
-    const remoteVaultKey = this.deps.getRemoteVaultKey();
     for (const pending of await store.listDirtyEntries()) {
       const metadata = await decryptSyncMetadata(
-        remoteVaultKey,
         pending.encryptedMetadata,
         metadataContextFromPendingMutation(pending),
       );

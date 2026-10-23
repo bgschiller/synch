@@ -11,7 +11,6 @@ import { SyncContentRuntime } from "../../core/content-runtime";
 import {
   createToken,
   encryptMutationMetadata,
-  TEST_VAULT_KEY,
 } from "./push-service/helpers";
 
 describe("PushMutationPreparer encrypted payload retention", () => {
@@ -63,7 +62,6 @@ describe("PushMutationPreparer encrypted payload retention", () => {
       let uploadedBytes: Uint8Array | null = null;
       const preparer = new PushMutationPreparer({
         contentRuntime: createTestContentRuntime(),
-        getRemoteVaultKey: () => TEST_VAULT_KEY,
         fileReader: {
           async readBytes(readPath) {
             expect(readPath).toBe(path);
@@ -206,7 +204,7 @@ describe("PushMutationPreparer retries", () => {
 
 async function createRetryFixture(path: string, cacheMaxBytes?: number) {
   const store = createTestSyncStore();
-  const crypto = createSyncCryptoContext(TEST_VAULT_KEY);
+  const crypto = createSyncCryptoContext();
   const contentRuntime = new SyncContentRuntime();
   const blobRetryCache = new PushBlobRetryCache(contentRuntime, cacheMaxBytes);
   let bytes = encodeUtf8("original");
@@ -222,7 +220,6 @@ async function createRetryFixture(path: string, cacheMaxBytes?: number) {
   const encrypt = vi.spyOn(crypto, "encryptBlob");
   const upload = vi.fn(async () => {});
   const preparer = new PushMutationPreparer({
-    getRemoteVaultKey: () => TEST_VAULT_KEY,
     getSyncCryptoContext: () => crypto,
     contentRuntime,
     fileReader: { readBytes: async () => bytes },

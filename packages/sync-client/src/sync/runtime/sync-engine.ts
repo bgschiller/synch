@@ -90,7 +90,6 @@ export interface SyncEngineDeps {
   getApiBaseUrl: () => string;
   getSyncToken: () => Promise<SyncTokenResponse>;
   invalidateSyncToken: () => void;
-  getRemoteVaultKey: () => Uint8Array;
   getConflictPolicy?: () => SyncConflictPolicy;
   getSyncFileRules: () => SyncFileRules;
   getVaultConfigSyncRules: () => VaultConfigSyncRules;
@@ -159,7 +158,6 @@ export class SyncEngine {
     this.vaultConfigSource = deps.vaultConfigSource;
     this.syncEventRecorder = new SyncEventRecorder({
       getSyncStore: () => this.syncStore,
-      getRemoteVaultKey: () => this.deps.getRemoteVaultKey(),
       eventGate: this.syncEventGate,
       contentRuntime: this.contentRuntime,
     });
@@ -174,7 +172,6 @@ export class SyncEngine {
     this.syncPushService = new SyncPushService({
       getSyncToken: async () => await this.deps.getSyncToken(),
       getSyncStore: () => this.syncStore,
-      getRemoteVaultKey: () => this.deps.getRemoteVaultKey(),
       fileReader: this.vaultAdapter,
       conflictFileWriter: this.vaultAdapter,
       blobClient: this.syncBlobClient,
@@ -207,7 +204,6 @@ export class SyncEngine {
     });
     this.syncLocalReconcileService = new SyncLocalReconcileService({
       getSyncStore: () => this.syncStore,
-      getRemoteVaultKey: () => this.deps.getRemoteVaultKey(),
       shouldSyncPath: (path) =>
         this.decideVaultPathSync(path).kind === "sync",
       scanner: {
@@ -332,7 +328,6 @@ export class SyncEngine {
       onRemoteStatesChange: () => this.deps.onFileSizeBlockedFilesChange?.(),
       getSyncToken: async () => await this.deps.getSyncToken(),
       getSyncStore: () => this.syncStore,
-      getRemoteVaultKey: () => this.deps.getRemoteVaultKey(),
       shouldApplyRemotePath: (path, deleted) =>
         shouldApplyRemoteVaultPath(path, this.vaultPathPolicyRules(), { deleted }),
       shouldUseLatestRemoteVersion: (path) =>
@@ -368,7 +363,6 @@ export class SyncEngine {
     this.syncVersionHistoryService = new SyncVersionHistoryService({
       getSyncToken: async () => await this.deps.getSyncToken(),
       getStore: () => this.requireStore(),
-      getRemoteVaultKey: () => this.deps.getRemoteVaultKey(),
       blobClient: this.syncBlobClient,
       contentRuntime: this.contentRuntime,
       withRealtimeSession: async (work) => await this.withRealtimeSession(work),
@@ -558,7 +552,6 @@ export class SyncEngine {
         eventGate: this.syncEventGate,
         blobClient: this.syncBlobClient,
         getSyncToken: () => this.deps.getSyncToken(),
-        getRemoteVaultKey: () => this.deps.getRemoteVaultKey(),
         contentRuntime: this.contentRuntime,
       });
     });
@@ -663,7 +656,7 @@ export class SyncEngine {
       return [];
     }
 
-    return await listBlockedSyncFiles(store, this.deps.getRemoteVaultKey());
+    return await listBlockedSyncFiles(store);
   }
 
   /** @deprecated Use `listBlockedSyncFiles`. */
@@ -673,7 +666,7 @@ export class SyncEngine {
       return [];
     }
 
-    return await listFileSizeBlockedFiles(store, this.deps.getRemoteVaultKey());
+    return await listFileSizeBlockedFiles(store);
   }
 
   async listEntryVersionsForPath(

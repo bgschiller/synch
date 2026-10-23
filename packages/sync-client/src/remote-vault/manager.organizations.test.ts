@@ -10,8 +10,6 @@ function managerFor(response: HttpResponseLike) {
     getAuthSessionToken: () => "token",
     hasAuthenticatedSession: () => true,
     getStoredRemoteVaultId: () => null,
-    getStoredRemoteVaultKeySecret: () => null,
-    saveStoredRemoteVaultKeySecret: async () => {},
     refreshUi: () => {}, notify: () => {},
     remoteVaultClient: new RemoteVaultClient({ request }),
   });

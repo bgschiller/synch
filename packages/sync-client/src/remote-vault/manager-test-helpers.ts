@@ -1,6 +1,5 @@
 import { vi } from "vitest";
 
-import type { StoredRemoteVaultKeySecret } from "./types";
 import {
   RemoteVaultManager,
   type RemoteVaultNoticeEvent,
@@ -30,8 +29,6 @@ type RemoteVaultClientOverrides = Partial<{
 
 export function createManager(input: {
   storedVaultId?: string | null;
-  storedVault?: StoredRemoteVaultKeySecret | null;
-  savedVaults?: Array<StoredRemoteVaultKeySecret | null>;
   refreshUi?: () => void;
   notify?: (event: RemoteVaultNoticeEvent) => void;
   remoteVaultClient?: RemoteVaultClientOverrides;
@@ -41,10 +38,6 @@ export function createManager(input: {
     getAuthSessionToken: () => "session-token",
     hasAuthenticatedSession: () => true,
     getStoredRemoteVaultId: () => input.storedVaultId ?? null,
-    getStoredRemoteVaultKeySecret: () => input.storedVault ?? null,
-    saveStoredRemoteVaultKeySecret: async (vault) => {
-      input.savedVaults?.push(vault);
-    },
     refreshUi: input.refreshUi ?? vi.fn(),
     notify: input.notify ?? vi.fn(),
     remoteVaultClient: {

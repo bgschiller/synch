@@ -35,17 +35,13 @@ describe("CliCredentialsStore", () => {
 
   it("round-trips vault credentials keyed by vault path", async () => {
     const store = new CliCredentialsStore(credentialsPath);
-    const key = new Uint8Array([1, 2, 3, 4]);
     expect(store.getVaultCredential("/vaults/a")).toBeNull();
 
-    await store.saveVaultCredential("/vaults/a", "vault-1", {
-      remoteVaultKey: key,
-    });
+    await store.saveVaultCredential("/vaults/a", "vault-1");
 
     const reloaded = new CliCredentialsStore(credentialsPath);
     const credential = reloaded.getVaultCredential("/vaults/a");
     expect(credential?.remoteVaultId).toBe("vault-1");
-    expect([...(credential?.secret.remoteVaultKey ?? [])]).toEqual([1, 2, 3, 4]);
     expect(reloaded.getVaultCredential("/vaults/b")).toBeNull();
   });
 
@@ -86,15 +82,13 @@ describe("CliCredentialsStore", () => {
     expect(store.getSessionToken()).toBe("legacy-session");
     expect(store.getVaultCredential("/vaults/a")).toEqual({
       remoteVaultId: "vault-1",
-      secret: { remoteVaultKey: new Uint8Array([1, 2, 3, 4]) },
     });
   });
 
   it("clears individual and all vault credentials", async () => {
     const store = new CliCredentialsStore(credentialsPath);
-    const key = new Uint8Array([7]);
-    await store.saveVaultCredential("/vaults/a", "vault-1", { remoteVaultKey: key });
-    await store.saveVaultCredential("/vaults/b", "vault-2", { remoteVaultKey: key });
+    await store.saveVaultCredential("/vaults/a", "vault-1");
+    await store.saveVaultCredential("/vaults/b", "vault-2");
 
     await store.clearVaultCredential("/vaults/a");
     expect(store.getVaultCredential("/vaults/a")).toBeNull();

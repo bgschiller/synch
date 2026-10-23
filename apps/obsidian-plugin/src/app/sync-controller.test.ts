@@ -444,7 +444,6 @@ function createDeps(
     getApiBaseUrl: () => "http://127.0.0.1:8787",
     getSyncToken: async () => createToken(),
     invalidateSyncToken: vi.fn(),
-    getRemoteVaultKey: () => new Uint8Array(32),
     getSyncFileRules: () => DEFAULT_SYNC_FILE_RULES,
     getVaultConfigSyncRules: () => DEFAULT_VAULT_CONFIG_SYNC_RULES,
     getSyncIntervalMs: () => 0,

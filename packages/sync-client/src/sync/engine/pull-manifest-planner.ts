@@ -28,7 +28,6 @@ type ValidatedManifestItem = PullEntryStateManifestItem & (
 );
 
 interface PullManifestPlannerDeps {
-  getRemoteVaultKey: () => Uint8Array;
   vaultAdapter: ConflictFileWriter;
   onRollbackDetected?: (event: PullRollbackEvent) => void;
   shouldUseLatestRemoteVersion?: (path: string) => boolean;
@@ -360,7 +359,6 @@ export class PullManifestPlanner {
     }
 
     const pendingMetadata = await decryptSyncMetadata(
-      this.deps.getRemoteVaultKey(),
       pending.encryptedMetadata,
       metadataContextFromPendingMutation(pending),
     );

@@ -4,11 +4,9 @@ import fsPromises from "node:fs/promises";
 import path from "node:path";
 
 import type { AuthSessionTokenStore } from "@synch/sync-client/auth";
-import type { StoredRemoteVaultKeySecret } from "@synch/sync-client/remote";
 
 interface StoredVaultCredential {
   remoteVaultId: string;
-  remoteVaultKeyBase64: string;
 }
 
 interface CredentialsFile {
@@ -20,7 +18,7 @@ interface CredentialsFile {
 }
 
 /**
- * File-backed credential store (session token + per-vault key bytes).
+ * File-backed credential store (session token + connected vault id).
  * Secrets live outside the vault, in the CLI config directory, with 0600
  * permissions. State is cached in memory because the sync-client vault
  * manager reads credentials through synchronous getters.
@@ -55,32 +53,24 @@ export class CliCredentialsStore {
 
   getVaultCredential(vaultPath: string): {
     remoteVaultId: string;
-    secret: StoredRemoteVaultKeySecret;
   } | null {
     const record = this.state.vaults?.[vaultPath];
-    if (!record?.remoteVaultId || !record.remoteVaultKeyBase64) {
+    if (!record?.remoteVaultId) {
       return null;
     }
 
     return {
       remoteVaultId: record.remoteVaultId,
-      secret: {
-        remoteVaultKey: new Uint8Array(
-          Buffer.from(record.remoteVaultKeyBase64, "base64"),
-        ),
-      },
     };
   }
 
   async saveVaultCredential(
     vaultPath: string,
     remoteVaultId: string,
-    secret: StoredRemoteVaultKeySecret,
   ): Promise<void> {
     this.state.vaults ??= {};
     this.state.vaults[vaultPath] = {
       remoteVaultId,
-      remoteVaultKeyBase64: Buffer.from(secret.remoteVaultKey).toString("base64"),
     };
     await this.persist();
   }

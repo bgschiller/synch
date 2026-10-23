@@ -5,7 +5,6 @@ import { createTestSyncStore } from "../../../../test-support/in-memory-sync-sto
 import { SyncLocalReconcileService } from "../../local-reconcile-service";
 import {
   encryptTestMetadata,
-  TEST_VAULT_KEY,
 } from "./helpers";
 
 describe("SyncLocalReconcileService cleanup", () => {
@@ -41,7 +40,6 @@ describe("SyncLocalReconcileService cleanup", () => {
     const service = new SyncLocalReconcileService({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldSyncPath: () => true,
       scanner: {
         async listFiles() {
@@ -122,7 +120,6 @@ describe("SyncLocalReconcileService cleanup", () => {
     const service = new SyncLocalReconcileService({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldSyncPath: (path) => path !== "Assets/raw.bin" && path !== "Assets/remote.bin",
       scanner: {
         async listFiles() {

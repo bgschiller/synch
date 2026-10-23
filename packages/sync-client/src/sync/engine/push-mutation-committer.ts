@@ -191,7 +191,7 @@ export class PushMutationCommitter {
       return this.deps.getSyncCryptoContext();
     }
 
-    this.fallbackCryptoContext ??= createSyncCryptoContext(this.deps.getRemoteVaultKey());
+    this.fallbackCryptoContext ??= createSyncCryptoContext();
     return this.fallbackCryptoContext;
   }
 

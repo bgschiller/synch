@@ -7,7 +7,6 @@ import { SyncEventGate } from "../../event-gate";
 import { SyncEventRecorder } from "../../event-recorder";
 import {
   decryptPendingMetadata,
-  TEST_VAULT_KEY,
 } from "./helpers";
 
 describe("SyncEventRecorder suppression and binary files", () => {
@@ -17,7 +16,6 @@ describe("SyncEventRecorder suppression and binary files", () => {
     const recorder = new SyncEventRecorder({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       eventGate: gate,
     });
 
@@ -35,7 +33,6 @@ describe("SyncEventRecorder suppression and binary files", () => {
     const recorder = new SyncEventRecorder({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
     });
     const imageBytes = new Uint8Array([0, 255, 1, 2, 3, 4]);
 

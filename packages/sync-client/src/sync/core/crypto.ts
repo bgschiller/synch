@@ -49,18 +49,15 @@ export interface SyncCryptoContext {
 }
 
 /**
- * Identity crypto: payloads are stored/transferred as plaintext. The
- * `remoteVaultKey` is accepted for call-site compatibility but ignored.
- *
- * The server treats `encrypted_metadata` and R2 blobs as opaque bytes, so this
- * requires no coordinator / blob-transfer changes.
+ * Identity crypto: payloads are stored/transferred as plaintext. The server
+ * treats `encrypted_metadata` and R2 blobs as opaque bytes, so this requires no
+ * coordinator / blob-transfer changes.
  */
-export function createSyncCryptoContext(_remoteVaultKey: Uint8Array): SyncCryptoContext {
+export function createSyncCryptoContext(): SyncCryptoContext {
   return new IdentitySyncCryptoContext();
 }
 
 export async function encryptSyncMetadata(
-  _remoteVaultKey: Uint8Array,
   metadata: SyncedEntryMetadata,
   _context: SyncMetadataCryptoContext,
 ): Promise<string> {
@@ -68,7 +65,6 @@ export async function encryptSyncMetadata(
 }
 
 export async function decryptSyncMetadata(
-  _remoteVaultKey: Uint8Array,
   encryptedMetadata: string,
   _context: SyncMetadataCryptoContext,
 ): Promise<SyncedEntryMetadata> {
@@ -76,7 +72,6 @@ export async function decryptSyncMetadata(
 }
 
 export async function encryptSyncBlob(
-  _remoteVaultKey: Uint8Array,
   plaintext: Uint8Array,
   _context: SyncBlobCryptoContext,
 ): Promise<Uint8Array> {
@@ -84,7 +79,6 @@ export async function encryptSyncBlob(
 }
 
 export async function decryptSyncBlob(
-  _remoteVaultKey: Uint8Array,
   encryptedBlob: Uint8Array,
   _context: SyncBlobCryptoContext,
 ): Promise<Uint8Array> {

@@ -4,7 +4,7 @@ import { BytesInFlightBudget } from "../../../core/bytes-in-flight";
 import { createTestSyncStore } from "../../../../test-support/in-memory-sync-store";
 import { hashBytes } from "../../../core/content";
 import { SyncPushService } from "../../push-service";
-import { createPushSession, createToken, encryptMutationMetadata, TEST_VAULT_KEY } from "./helpers";
+import { createPushSession, createToken, encryptMutationMetadata } from "./helpers";
 
 async function fixture(failCommit: boolean) {
   const store = createTestSyncStore();
@@ -27,7 +27,7 @@ async function fixture(failCommit: boolean) {
   const reads: string[] = [];
   const service = new SyncPushService({
     contentRuntime: runtime, getSyncStore: () => store, getSyncToken: async () => createToken(),
-    getRemoteVaultKey: () => TEST_VAULT_KEY, prepareConcurrency: 4,
+    prepareConcurrency: 4,
     fileReader: {
       getFileSize: async (path) => files.get(path)!.byteLength,
       readBytes: async (path) => {

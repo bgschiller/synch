@@ -16,7 +16,6 @@ export type SyncFileSizeBlockedFile = Omit<SyncBlockedSyncFile, "reason">;
 
 export async function listBlockedSyncFiles(
   store: SyncStore,
-  remoteVaultKey: Uint8Array,
 ): Promise<SyncBlockedSyncFile[]> {
   const mutations = (await Promise.all([
     store.listBlockedDirtyEntriesByReason("file_too_large"),
@@ -29,7 +28,6 @@ export async function listBlockedSyncFiles(
     }
 
     const metadata = await decryptSyncMetadata(
-      remoteVaultKey,
       mutation.encryptedMetadata,
       metadataContextFromMutation(mutation),
     );
@@ -61,9 +59,8 @@ export async function listBlockedSyncFiles(
 /** @deprecated Use `listBlockedSyncFiles`. */
 export async function listFileSizeBlockedFiles(
   store: SyncStore,
-  remoteVaultKey: Uint8Array,
 ): Promise<SyncBlockedSyncFile[]> {
-  return (await listBlockedSyncFiles(store, remoteVaultKey)).filter(
+  return (await listBlockedSyncFiles(store)).filter(
     (file) => file.reason === "file_too_large",
   );
 }

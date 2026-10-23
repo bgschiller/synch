@@ -24,7 +24,6 @@ const VERSION_PREVIEW_UNAVAILABLE_MESSAGE = "This version has no previewable con
 export interface SyncVersionHistoryServiceDeps extends SyncContentRuntimeDeps {
   getSyncToken: () => Promise<SyncTokenResponse>;
   getStore: () => SyncVersionHistoryStore;
-  getRemoteVaultKey: () => Uint8Array;
   blobClient: Pick<SyncBlobClient, "downloadBlob">;
   withRealtimeSession: <T>(
     work: (session: SyncRealtimeSession) => Promise<T>,
@@ -116,7 +115,6 @@ export class SyncVersionHistoryService {
       const entries: SyncDeletedEntry[] = [];
       for (const entry of page.entries) {
         const metadata = await decryptSyncMetadata(
-          this.deps.getRemoteVaultKey(),
           entry.encryptedMetadata,
           {
             entryId: entry.entryId,
@@ -299,7 +297,6 @@ export class SyncVersionHistoryService {
     version: EntryVersion,
   ): Promise<RestoreEntryVersionPayload> {
     const metadata = await decryptSyncMetadata(
-      this.deps.getRemoteVaultKey(),
       version.encryptedMetadata,
       {
         entryId: entry.entryId,
@@ -309,7 +306,6 @@ export class SyncVersionHistoryService {
       },
     );
     const encryptedMetadata = await encryptSyncMetadata(
-      this.deps.getRemoteVaultKey(),
       metadata,
       {
         entryId: entry.entryId,
@@ -344,7 +340,6 @@ export class SyncVersionHistoryService {
     }
 
     const metadata = await decryptSyncMetadata(
-      this.deps.getRemoteVaultKey(),
       version.encryptedMetadata,
       {
         entryId,
@@ -359,7 +354,6 @@ export class SyncVersionHistoryService {
       version.blobId,
     );
     let bytes = await decryptSyncBlob(
-      this.deps.getRemoteVaultKey(),
       encryptedBytes,
       { blobId: version.blobId },
     );

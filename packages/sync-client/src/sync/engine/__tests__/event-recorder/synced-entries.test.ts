@@ -8,7 +8,6 @@ import {
   decryptPendingMetadata,
   encryptTestMetadata,
   putTestBaseBlob,
-  TEST_VAULT_KEY,
 } from "./helpers";
 
 describe("SyncEventRecorder synced entries", () => {
@@ -17,7 +16,6 @@ describe("SyncEventRecorder synced entries", () => {
     const recorder = new SyncEventRecorder({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
     });
 
     await store.upsertEntry({
@@ -71,7 +69,6 @@ describe("SyncEventRecorder synced entries", () => {
     const recorder = new SyncEventRecorder({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
     });
     const bytes = encodeUtf8("synced body");
     const hash = await hashBytes(bytes);
@@ -110,7 +107,6 @@ describe("SyncEventRecorder synced entries", () => {
     const recorder = new SyncEventRecorder({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
     });
     const oldPath = "Folder/file.md";
     const nextPath = "Folder/renamed.md";
@@ -176,7 +172,6 @@ describe("SyncEventRecorder synced entries", () => {
     const recorder = new SyncEventRecorder({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
     });
     const bytes = encodeUtf8("synced body");
     const hash = await hashBytes(bytes);
@@ -236,7 +231,6 @@ describe("SyncEventRecorder synced entries", () => {
     const recorder = new SyncEventRecorder({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
     });
     const bytes = encodeUtf8("restored body");
     const hash = await hashBytes(bytes);
@@ -304,7 +298,6 @@ describe("SyncEventRecorder synced entries", () => {
     const recorder = new SyncEventRecorder({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
     });
     const bytes = encodeUtf8("late restore body");
     const hash = await hashBytes(bytes);

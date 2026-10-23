@@ -8,7 +8,7 @@ import { SyncStateChangedError } from "./sync-state-coordinator";
  * preparation and apply, including edits whose watcher event is still queued. */
 export class PullLocalFileSnapshots {
   constructor(private readonly deps: Pick<PullEntryStateApplierDeps,
-    "vaultAdapter" | "contentRuntime" | "getRemoteVaultKey">) {}
+    "vaultAdapter" | "contentRuntime">) {}
 
   async capture(
     paths: ReadonlyArray<string | null | undefined>,
@@ -38,7 +38,6 @@ export class PullLocalFileSnapshots {
     // filesystem; record the edit before retrying the plan against fresh state.
     const recorder = new SyncEventRecorder({
       getSyncStore: () => store,
-      getRemoteVaultKey: this.deps.getRemoteVaultKey,
       contentRuntime: this.deps.contentRuntime,
     });
     for (const path of paths) {

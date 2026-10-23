@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { encodeUtf8, hashBytes } from "../../../core/content";
 import { createTestSyncStore } from "../../../../test-support/in-memory-sync-store";
 import { SyncLocalReconcileService } from "../../local-reconcile-service";
-import { localFile, TEST_VAULT_KEY } from "./helpers";
+import { localFile } from "./helpers";
 
 describe("SyncLocalReconcileService stat cache", () => {
   it("skips reading unchanged files when local stat cache matches", async () => {
@@ -26,7 +26,6 @@ describe("SyncLocalReconcileService stat cache", () => {
     const service = new SyncLocalReconcileService({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldSyncPath: () => true,
       scanner: {
         async listFiles() {
@@ -74,7 +73,6 @@ describe("SyncLocalReconcileService stat cache", () => {
     const service = new SyncLocalReconcileService({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldSyncPath: () => true,
       scanner: {
         async listFiles() {

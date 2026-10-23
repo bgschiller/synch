@@ -17,7 +17,6 @@ import {
   hashText,
   ignoreProgress,
   type PullConflictSummary,
-  TEST_VAULT_KEY,
 } from "./helpers";
 
 describe("SyncPullService path operations", () => {
@@ -68,7 +67,6 @@ describe("SyncPullService path operations", () => {
         contentRuntime: createTestContentRuntime(),
         getSyncToken: async () => createToken(),
         getSyncStore: () => store,
-        getRemoteVaultKey: () => TEST_VAULT_KEY,
         shouldApplyRemotePath: (path, deleted) => deleted || isPortableVaultPath(path),
         vaultAdapter: adapter,
         blobClient,
@@ -113,7 +111,6 @@ describe("SyncPullService path operations", () => {
         contentRuntime: createTestContentRuntime(),
         getSyncToken: async () => createToken(),
         getSyncStore: () => store,
-        getRemoteVaultKey: () => TEST_VAULT_KEY,
         shouldApplyRemotePath: (path, deleted) => deleted || isPortableVaultPath(path),
         vaultAdapter: adapter,
         blobClient: createBlobClient({
@@ -140,13 +137,13 @@ describe("SyncPullService path operations", () => {
 
       expect(adapter.files.size).toBe(0);
       expect(await store.listDirtyEntries()).toEqual([]);
-      await expect(listBlockedSyncFiles(store, TEST_VAULT_KEY)).resolves.toEqual([{
+      await expect(listBlockedSyncFiles(store)).resolves.toEqual([{
         path,
         reason: "incompatible_path",
         encryptedSizeBytes: null,
         maxFileSizeBytes: null,
       }]);
-      await expect(listFileSizeBlockedFiles(store, TEST_VAULT_KEY)).resolves.toEqual([]);
+      await expect(listFileSizeBlockedFiles(store)).resolves.toEqual([]);
       expect(onRemoteStatesChange).toHaveBeenCalledTimes(1);
 
       const deleted = operation === "delete";
@@ -170,7 +167,7 @@ describe("SyncPullService path operations", () => {
           }),
         })],
       }] }));
-      await expect(listBlockedSyncFiles(store, TEST_VAULT_KEY)).resolves.toEqual([]);
+      await expect(listBlockedSyncFiles(store)).resolves.toEqual([]);
       expect(onRemoteStatesChange).toHaveBeenCalledTimes(2);
       if (!deleted) expect(adapter.text("safe.md")).toBe("remote content");
 
@@ -217,7 +214,6 @@ describe("SyncPullService path operations", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldApplyRemotePath: (path) => path !== ".obsidian/app.json",
       vaultAdapter: adapter,
       blobClient: createBlobClient({}),
@@ -264,7 +260,6 @@ describe("SyncPullService path operations", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldApplyRemotePath: () => false,
       vaultAdapter: adapter,
       blobClient: createBlobClient({}),
@@ -305,7 +300,6 @@ describe("SyncPullService path operations", () => {
         contentRuntime: createTestContentRuntime(),
         getSyncToken: async () => createToken(),
         getSyncStore: () => store,
-        getRemoteVaultKey: () => TEST_VAULT_KEY,
         vaultAdapter: adapter,
         blobClient: createBlobClient({}),
       });
@@ -366,7 +360,6 @@ describe("SyncPullService path operations", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldApplyRemotePath: (_path, deleted) => deleted,
       vaultAdapter: adapter,
       blobClient: createBlobClient({}),
@@ -438,7 +431,6 @@ describe("SyncPullService path operations", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       eventGate: createEventGate(suppressionCalls),
       blobClient: client,
@@ -541,7 +533,6 @@ describe("SyncPullService path operations", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       eventGate: createEventGate(suppressionCalls),
       blobClient: client,
@@ -651,7 +642,6 @@ describe("SyncPullService path operations", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       eventGate: createEventGate(suppressionCalls),
       blobClient: client,
@@ -791,7 +781,6 @@ describe("SyncPullService path operations", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: client,
       onProgress: ignoreProgress,

@@ -1,6 +1,5 @@
 import { SyncAccessClient } from "@synch/sync-client/remote";
 import { ApiRequestError } from "@synch/sync-client/http";
-import { readStoredRemoteVaultKeySecret } from "../adapters/remote-vault-device-storage";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -53,11 +52,10 @@ describe("SynchPluginController sync enabled setting", () => {
     expect(stopAutoSyncAndMarkPaused).toHaveBeenCalledTimes(1);
   });
 
-  it("silently persists automatic sync off after a server pause and preserves the vault key", async () => {
+  it("silently persists automatic sync off after a server pause", async () => {
     const plugin = await createConnectedPlugin({ syncEnabled: true });
     const controller = new SynchPluginController({ plugin, refreshUi: vi.fn() });
     await controller.initialize();
-    const keyBefore = await readStoredRemoteVaultKeySecret(plugin);
     const noticesBefore = getNotices().length;
     const runtime = (controller as unknown as {
       syncController: { syncEngine: { deps: { onSyncError(error: Error, phase: string): void } } };
@@ -65,7 +63,6 @@ describe("SynchPluginController sync enabled setting", () => {
     runtime.deps.onSyncError(new ApiRequestError(503, "sync_paused", "paused"), "auto_sync");
     await vi.waitFor(() => expect(plugin.savedData?.[SYNCH_SETTINGS_KEY]).toMatchObject({ syncEnabled: false }));
     expect(controller.isSyncEnabled()).toBe(false);
-    expect(await readStoredRemoteVaultKeySecret(plugin)).toEqual(keyBefore);
     const ensureAutoSyncState = vi.spyOn(SyncController.prototype, "ensureAutoSyncState").mockResolvedValue();
     await controller.ensureAutoSyncState();
     expect(ensureAutoSyncState).not.toHaveBeenCalled();
@@ -105,19 +102,17 @@ describe("SynchPluginController sync enabled setting", () => {
     });
   });
 
-  it("keeps sync disabled and preserves the vault when server resume fails", async () => {
+  it("keeps sync disabled when server resume fails", async () => {
     const plugin = await createConnectedPlugin({ syncEnabled: false });
     mockOnlineReadinessRequests();
     vi.spyOn(SyncController.prototype, "readStoredConnection").mockResolvedValue(storedConnection());
     const ensure = vi.spyOn(SyncController.prototype, "ensureAutoSyncState").mockResolvedValue();
     const controller = new SynchPluginController({ plugin, refreshUi: vi.fn() });
     await controller.initialize();
-    const key = await readStoredRemoteVaultKeySecret(plugin);
     vi.spyOn(SyncAccessClient.prototype, "issueSyncToken").mockRejectedValue(new ApiRequestError(503, "sync_paused", "repair required"));
     await controller.setSyncEnabled(true);
     expect(controller.isSyncEnabled()).toBe(false);
     expect(ensure).not.toHaveBeenCalled();
-    expect(await readStoredRemoteVaultKeySecret(plugin)).toEqual(key);
     expect(getNotices().length).toBeGreaterThan(0);
   });
 

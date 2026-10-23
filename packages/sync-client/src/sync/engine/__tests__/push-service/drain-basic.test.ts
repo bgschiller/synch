@@ -12,7 +12,6 @@ import {
   encryptMutationMetadata,
   ignoreProgress,
   metadataContextFromPayload,
-  TEST_VAULT_KEY,
   unusedBlobClient,
 } from "./helpers";
 
@@ -73,7 +72,6 @@ describe("SyncPushService drain: basic queue", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(path) {
           if (path === "Folder/new.md") {
@@ -142,13 +140,12 @@ describe("SyncPushService drain: basic queue", () => {
     ]);
     expect(new TextDecoder().decode(uploaded[0]?.bytes ?? new Uint8Array())).toBe("new body");
     await expect(
-      decryptSyncBlob(TEST_VAULT_KEY, uploaded[0]?.bytes ?? new Uint8Array(), {
+      decryptSyncBlob(uploaded[0]?.bytes ?? new Uint8Array(), {
         blobId: uploaded[0]?.blobId ?? "",
       }),
     ).resolves.toEqual(new TextEncoder().encode("new body"));
     await expect(
       decryptSyncMetadata(
-        TEST_VAULT_KEY,
         committed[0]?.encryptedMetadata ?? "",
         metadataContextFromPayload(committed[0]),
       ),
@@ -230,7 +227,6 @@ describe("SyncPushService drain: basic queue", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes() {
           throw new Error("delete mutations should not read bytes");
@@ -283,7 +279,6 @@ describe("SyncPushService drain: basic queue", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes() {
           throw new Error("delete mutations should not read bytes");
@@ -318,7 +313,6 @@ describe("SyncPushService drain: basic queue", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes() {
           throw new Error("should not read bytes");

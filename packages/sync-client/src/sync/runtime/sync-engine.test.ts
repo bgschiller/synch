@@ -15,7 +15,6 @@ import { SyncAutoLoop } from "../engine/auto-sync";
 import type { SyncChangeSource, SyncChangeSourceContext } from "./change-source";
 import { SyncEngine, type SyncEngineDeps } from "./sync-engine";
 
-const TEST_VAULT_KEY = new Uint8Array(Array.from({ length: 32 }, (_, index) => index + 1));
 const CONFIG_DIR = ".obsidian";
 
 describe("SyncEngine", () => {
@@ -76,7 +75,6 @@ describe("SyncEngine", () => {
     vault.seedText("note.md", "body");
     const store = createTestSyncStore();
     const fileSizeBlocked = await queueLocalUpsertMutation(store, {
-      remoteVaultKey: TEST_VAULT_KEY,
       path: "Folder/large.md",
       entryId: "entry-large",
       base: null,
@@ -90,7 +88,6 @@ describe("SyncEngine", () => {
       blockedMaxFileSizeBytes: 10_000_000,
     });
     const incompatiblePath = await queueLocalUpsertMutation(store, {
-      remoteVaultKey: TEST_VAULT_KEY,
       path: "Folder/bad:name.md",
       entryId: "entry-incompatible-path",
       base: null,
@@ -439,7 +436,6 @@ describe("SyncEngine", () => {
     const remoteBytes = encodeUtf8("{\"theme\":\"remote\"}");
     const remoteHash = await hashBytes(remoteBytes);
     const encryptedBytes = await encryptSyncBlob(
-      TEST_VAULT_KEY,
       remoteBytes,
       { blobId: "blob-config" },
     );
@@ -492,7 +488,6 @@ describe("SyncEngine", () => {
     const remoteBytes = encodeUtf8("{\"theme\":\"new\"}");
     const remoteHash = await hashBytes(remoteBytes);
     const encryptedBytes = await encryptSyncBlob(
-      TEST_VAULT_KEY,
       remoteBytes,
       { blobId: "blob-config-new" },
     );
@@ -567,7 +562,6 @@ describe("SyncEngine", () => {
       localSize: null,
     });
     const queued = await queueLocalUpsertMutation(store, {
-      remoteVaultKey: TEST_VAULT_KEY,
       path: `${CONFIG_DIR}/app.json`,
       entryId: "entry-config",
       base: await store.getRemoteStateById("entry-config"),
@@ -665,7 +659,6 @@ function createTestEngine(
     getApiBaseUrl: () => "http://127.0.0.1:8787",
     getSyncToken: async () => createToken(),
     invalidateSyncToken: vi.fn(),
-    getRemoteVaultKey: () => TEST_VAULT_KEY,
     getSyncFileRules: () => DEFAULT_SYNC_FILE_RULES,
     getVaultConfigSyncRules: () => DEFAULT_VAULT_CONFIG_SYNC_RULES,
     shouldDeferSyncWork: () => false,

@@ -19,7 +19,6 @@ import {
   createToken,
   encryptMutationMetadata,
   ignoreProgress,
-  TEST_VAULT_KEY,
 } from "./helpers";
 
 const conflictTimestamp = () => new Date(2026, 3, 22, 10, 11, 12).getTime();
@@ -71,7 +70,6 @@ describe("SyncPushService stale revisions", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(path) {
           expect(path).toBe("Welcomed.md");
@@ -163,7 +161,6 @@ describe("SyncPushService stale revisions", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(path) {
           expect(path).toBe("Folder/note.md");
@@ -275,7 +272,6 @@ describe("SyncPushService stale revisions", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(path) {
           return encodeUtf8(path === "Folder/note.md" ? "local note" : "local task");
@@ -389,7 +385,6 @@ describe("SyncPushService stale revisions", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(path) {
           return encodeUtf8(path === "Folder/note.md" ? "local note" : "local task");
@@ -480,7 +475,6 @@ describe("SyncPushService stale revisions", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: createBlobClient({
         blobs: {
@@ -532,7 +526,6 @@ describe("SyncPushService stale revisions", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(readPath) {
           expect(readPath).toBe(path);

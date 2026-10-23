@@ -87,7 +87,6 @@ export interface SyncBlobStore {
 export interface SyncPushAcceptanceStore {
   applyAcceptedPushBatch(
     accepted: AcceptedPushMutationRow[],
-    options: { remoteVaultKey: Uint8Array },
   ): Promise<void>;
 }
 

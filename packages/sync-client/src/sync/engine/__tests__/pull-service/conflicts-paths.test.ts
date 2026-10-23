@@ -16,7 +16,6 @@ import {
   encryptTestBlob,
   hashText,
   ignoreProgress,
-  TEST_VAULT_KEY,
   type PullConflictSummary,
 } from "./helpers";
 
@@ -72,7 +71,6 @@ describe("SyncPullService path conflicts", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldUseLatestRemoteVersion: (candidate) => candidate.startsWith(".obsidian/"),
       vaultAdapter: adapter,
       blobClient: createBlobClient({
@@ -187,7 +185,6 @@ describe("SyncPullService path conflicts", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldUseLatestRemoteVersion: (candidate) => candidate.startsWith(".obsidian/"),
       vaultAdapter: adapter,
       blobClient: createBlobClient({}),
@@ -264,7 +261,6 @@ describe("SyncPullService path conflicts", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldUseLatestRemoteVersion: (candidate) => candidate.startsWith(".obsidian/"),
       vaultAdapter: adapter,
       blobClient: createBlobClient({
@@ -341,7 +337,6 @@ describe("SyncPullService path conflicts", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldUseLatestRemoteVersion: (candidate) => candidate.startsWith(".obsidian/"),
       vaultAdapter: adapter,
       blobClient: createBlobClient({}),
@@ -422,7 +417,6 @@ describe("SyncPullService path conflicts", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldUseLatestRemoteVersion: (candidate) => candidate.startsWith(".obsidian/"),
       vaultAdapter: adapter,
       blobClient: createBlobClient({
@@ -497,7 +491,6 @@ describe("SyncPullService path conflicts", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldUseLatestRemoteVersion: (candidate) => candidate.startsWith(".obsidian/"),
       vaultAdapter: adapter,
       blobClient: createBlobClient({}),
@@ -555,7 +548,6 @@ describe("SyncPullService path conflicts", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldUseLatestRemoteVersion: (candidate) => candidate.startsWith(".obsidian/"),
       vaultAdapter: adapter,
       blobClient: createBlobClient({
@@ -647,7 +639,6 @@ describe("SyncPullService path conflicts", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: client,
       onProgress: ignoreProgress,
@@ -686,7 +677,7 @@ describe("SyncPullService path conflicts", () => {
       hash,
     });
     expect(
-      await decryptSyncBlob(TEST_VAULT_KEY, cachedRemote!.encryptedBytes, {
+      await decryptSyncBlob(cachedRemote!.encryptedBytes, {
         blobId: "blob-remote",
       }),
     ).toEqual(new TextEncoder().encode(body));
@@ -759,7 +750,6 @@ describe("SyncPullService path conflicts", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: createBlobClient({}),
       onProgress: ignoreProgress,
@@ -873,7 +863,6 @@ describe("SyncPullService path conflicts", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: client,
       onProgress: ignoreProgress,
@@ -985,7 +974,6 @@ describe("SyncPullService path conflicts", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: client,
       onProgress: ignoreProgress,
@@ -1083,7 +1071,6 @@ describe("SyncPullService path conflicts", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       eventGate: createEventGate(suppressionCalls),
       blobClient: client,
@@ -1196,7 +1183,6 @@ describe("SyncPullService path conflicts", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       getConflictPolicy: policy === undefined ? undefined : () => policy,
       vaultAdapter: adapter,
       blobClient: client,

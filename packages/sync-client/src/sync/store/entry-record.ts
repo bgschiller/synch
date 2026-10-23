@@ -362,7 +362,6 @@ export interface AcceptedPushApplyPlan {
 export async function planAcceptedPushApply(
   row: EntryRecord,
   accepted: AcceptedPushMutationRow,
-  remoteVaultKey: Uint8Array,
 ): Promise<AcceptedPushApplyPlan> {
   if (row.remoteKnown && row.remoteRevision > accepted.acceptedRevision) return { rebase: null };
   const currentPending = toPendingMutationRow(row);
@@ -371,7 +370,6 @@ export async function planAcceptedPushApply(
   }
 
   const pendingMetadata = await decryptSyncMetadata(
-    remoteVaultKey,
     currentPending.encryptedMetadata,
     metadataContextFromMutation(currentPending),
   );
@@ -380,7 +378,6 @@ export async function planAcceptedPushApply(
     rebase: {
       pendingMutationId: currentPending.mutationId,
       encryptedMetadata: await encryptSyncMetadata(
-        remoteVaultKey,
         pendingMetadata,
         metadataContextFromMutation({
           ...currentPending,

@@ -57,7 +57,6 @@ export interface SyncControllerDeps {
   getApiBaseUrl: () => string;
   getSyncToken: () => Promise<SyncTokenResponse>;
   invalidateSyncToken: () => void;
-  getRemoteVaultKey: () => Uint8Array;
   getSyncFileRules: () => SyncFileRules;
   getConflictPolicy?: () => SyncConflictPolicy;
   getVaultConfigSyncRules: () => VaultConfigSyncRules;
@@ -103,7 +102,6 @@ export class SyncController {
     getApiBaseUrl: () => this.deps.getApiBaseUrl(),
     getSyncToken: async () => await this.deps.getSyncToken(),
     invalidateSyncToken: () => this.deps.invalidateSyncToken(),
-    getRemoteVaultKey: () => this.deps.getRemoteVaultKey(),
     getSyncFileRules: () => this.deps.getSyncFileRules(),
     getConflictPolicy: () => this.deps.getConflictPolicy?.() ?? "conflict-copy",
     getVaultConfigSyncRules: () => this.deps.getVaultConfigSyncRules(),

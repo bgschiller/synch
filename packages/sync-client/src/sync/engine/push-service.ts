@@ -41,7 +41,6 @@ const DEFAULT_PUSH_PREPARE_CONCURRENCY = 12;
 export interface SyncPushServiceDeps extends SyncContentRuntimeDeps {
   getSyncToken: () => Promise<SyncTokenResponse>;
   getSyncStore: () => SyncPushStore | null;
-  getRemoteVaultKey: () => Uint8Array;
   fileReader: LocalFileReader;
   conflictFileWriter?: ConflictFileWriter;
   blobClient: Pick<SyncBlobClient, "uploadBlob">;
@@ -143,10 +142,8 @@ export class SyncPushService {
     let stopAfterCurrentBatch = false;
     let stopReason: PushPendingMutationsResult["stopReason"];
 
-    const remoteVaultKey = this.deps.getRemoteVaultKey();
-    const syncCryptoContext = createSyncCryptoContext(remoteVaultKey);
+    const syncCryptoContext = createSyncCryptoContext();
     const mutationCommitter = this.createMutationCommitter(
-      remoteVaultKey,
       syncCryptoContext,
     );
     try {
@@ -277,9 +274,7 @@ export class SyncPushService {
             await withSyncState(store, {
               entryIds: acceptedPushMutations.map((item) => item.mutation.entryId),
               paths: acceptedPushMutations.map((item) => item.metadata.path),
-            }, async () => await store.applyAcceptedPushBatch(acceptedPushMutations, {
-              remoteVaultKey,
-            }));
+            }, async () => await store.applyAcceptedPushBatch(acceptedPushMutations));
           }
         } catch (error) {
           for (const accepted of acceptedFiles) {
@@ -421,11 +416,9 @@ export class SyncPushService {
   }
 
   private createMutationCommitter(
-    remoteVaultKey: Uint8Array,
     syncCryptoContext: SyncCryptoContext,
   ): PushMutationCommitter {
     return new PushMutationCommitter({
-      getRemoteVaultKey: () => remoteVaultKey,
       getSyncCryptoContext: () => syncCryptoContext,
       fileReader: this.deps.fileReader,
       conflictFileWriter: this.deps.conflictFileWriter,

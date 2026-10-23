@@ -5,7 +5,6 @@ import { SyncPullService } from "../../pull-service";
 import {
   createCommit, createBlobClient, createRealtimeSession, createToken,
   createVaultAdapter, encryptRemoteMetadata, encryptTestBlob, hashText,
-  TEST_VAULT_KEY,
 } from "./helpers";
 
 function gate() {
@@ -40,7 +39,6 @@ async function setup() {
     contentRuntime: createTestContentRuntime(),
     getSyncToken: async () => createToken(),
     getSyncStore: () => store,
-    getRemoteVaultKey: () => TEST_VAULT_KEY,
     vaultAdapter: adapter, blobClient: client, applyWindowSize: 1,
   });
   return { store, adapter, session, client, service };

@@ -19,7 +19,6 @@ import {
 } from "./pull-entry-state-internal";
 
 interface PullBlobPreparerDeps extends SyncContentRuntimeDeps {
-  getRemoteVaultKey: () => Uint8Array;
   vaultAdapter: SyncVaultAccess;
   blobClient: Pick<SyncBlobClient, "downloadBlob">;
   prepareConcurrency?: number;
@@ -111,7 +110,7 @@ export class PullBlobPreparer {
     }
 
     const blobId = requireBlobId(plan.state);
-    const syncCrypto = createSyncCryptoContext(this.deps.getRemoteVaultKey());
+    const syncCrypto = createSyncCryptoContext();
     try {
       await store.putBlob({
         blobId,
@@ -155,7 +154,6 @@ export class PullBlobPreparer {
     // this updates admission only after the full HTTP body has arrived.
     reservation?.retain(encryptedBytes.byteLength * 3);
     let bytes = await decryptSyncBlob(
-      this.deps.getRemoteVaultKey(),
       encryptedBytes,
       { blobId },
     );

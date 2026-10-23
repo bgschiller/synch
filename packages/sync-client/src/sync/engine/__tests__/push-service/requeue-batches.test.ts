@@ -14,7 +14,6 @@ import {
   encryptMutationMetadata,
   ignoreProgress,
   putTestBaseBlob,
-  TEST_VAULT_KEY,
   unusedBlobClient,
 } from "./helpers";
 
@@ -45,7 +44,6 @@ describe("SyncPushService requeue and batches", () => {
     const recorder = new SyncEventRecorder({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
     });
     await recorder.recordUpsert(path, encodeUtf8("pushed body"));
 
@@ -76,7 +74,6 @@ describe("SyncPushService requeue and batches", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(readPath) {
           expect(readPath).toBe(path);
@@ -139,7 +136,6 @@ describe("SyncPushService requeue and batches", () => {
     const recorder = new SyncEventRecorder({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
     });
     await recorder.recordUpsert(oldPath, body);
 
@@ -166,7 +162,6 @@ describe("SyncPushService requeue and batches", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(readPath) {
           expect(readPath).toBe(currentPath);
@@ -246,7 +241,6 @@ describe("SyncPushService requeue and batches", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(path) {
           expect(path).toBe("Folder/note.md");
@@ -283,7 +277,7 @@ describe("SyncPushService requeue and batches", () => {
     expect(uploaded[0]?.blobId).toBe(committed[0]?.blobId);
     expect(await store.getCursor()).toBe(1);
     await expect(
-      decryptSyncBlob(TEST_VAULT_KEY, uploaded[0]?.bytes ?? new Uint8Array(), {
+      decryptSyncBlob(uploaded[0]?.bytes ?? new Uint8Array(), {
         blobId: uploaded[0]?.blobId ?? "",
       }),
     ).resolves.toEqual(new TextEncoder().encode("current body"));
@@ -352,7 +346,6 @@ describe("SyncPushService requeue and batches", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes() {
           throw new Error("delete mutations should not read bytes");

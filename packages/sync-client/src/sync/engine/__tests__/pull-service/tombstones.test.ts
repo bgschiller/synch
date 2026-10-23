@@ -15,7 +15,6 @@ import {
   encryptTestBlob,
   hashText,
   ignoreProgress,
-  TEST_VAULT_KEY,
 } from "./helpers";
 
 const conflictTimestamp = () => new Date(2026, 3, 22, 10, 11, 12).getTime();
@@ -107,7 +106,6 @@ describe("SyncPullService tombstones", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       eventGate: createEventGate(suppressionCalls),
       blobClient: client,

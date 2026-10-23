@@ -14,7 +14,6 @@ import {
   encryptTestBlob,
   hashText,
   ignoreProgress,
-  TEST_VAULT_KEY,
   type PullConflictSummary,
 } from "./helpers";
 
@@ -88,7 +87,6 @@ describe("SyncPullService pending upsert conflict resolution", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldUseLatestRemoteVersion: (candidate) => candidate.startsWith(".obsidian/"),
       vaultAdapter: adapter,
       blobClient: createBlobClient({
@@ -190,7 +188,6 @@ describe("SyncPullService pending upsert conflict resolution", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: client,
       onProgress: ignoreProgress,
@@ -295,7 +292,6 @@ describe("SyncPullService pending upsert conflict resolution", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: client,
       onProgress: ignoreProgress,
@@ -403,7 +399,6 @@ describe("SyncPullService pending upsert conflict resolution", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       getConflictPolicy: policy === undefined ? undefined : () => policy,
       vaultAdapter: adapter,
       blobClient: client,

@@ -24,7 +24,6 @@ export interface ReapplyRemoteVaultConfigDeps extends SyncContentRuntimeDeps {
   eventGate: SyncEventGate;
   blobClient: Pick<SyncBlobClient, "downloadBlob">;
   getSyncToken: () => Promise<SyncTokenResponse>;
-  getRemoteVaultKey: () => Uint8Array;
 }
 
 export async function reapplyAllowedRemoteVaultConfig(
@@ -68,7 +67,7 @@ export async function reapplyAllowedRemoteVaultConfig(
           if (!remote.blobId) return 0;
           encryptedBytes = await deps.blobClient.downloadBlob(token.vaultId, remote.blobId);
           const hashed = await contentRuntime.hashAndReturnBytes(await decryptSyncBlob(
-            deps.getRemoteVaultKey(), encryptedBytes, { blobId: remote.blobId },
+            encryptedBytes, { blobId: remote.blobId },
           ));
           bytes = hashed.bytes;
           if (hashed.hash !== remote.hash) {

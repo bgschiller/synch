@@ -8,9 +8,6 @@ import type { SyncBlobClient } from "../../../remote/blob-client";
 import type { SyncRealtimeSession } from "../../../remote/realtime-client";
 import type { SyncStore } from "../../../store/store";
 
-export const TEST_VAULT_KEY = new Uint8Array(
-  Array.from({ length: 32 }, (_, index) => index + 1),
-);
 
 type TestChangePage = {
   cursor: number;
@@ -76,7 +73,6 @@ export async function encryptRemoteMetadata(input: {
 }) {
   const hash = input.deleted ? null : requireHash(input.hash);
   return await encryptSyncMetadata(
-    TEST_VAULT_KEY,
     {
       path: input.path,
       hash,
@@ -100,7 +96,6 @@ export async function encryptPendingMetadata(input: {
 }) {
   const hash = input.op === "delete" ? null : requireHash(input.hash);
   return await encryptSyncMetadata(
-    TEST_VAULT_KEY,
     {
       path: input.path,
       hash,
@@ -115,7 +110,7 @@ export async function encryptPendingMetadata(input: {
 }
 
 export async function encryptTestBlob(blobId: string, bytes: Uint8Array) {
-  return await encryptSyncBlob(TEST_VAULT_KEY, bytes, { blobId });
+  return await encryptSyncBlob(bytes, { blobId });
 }
 
 export async function hashText(value: string): Promise<string> {

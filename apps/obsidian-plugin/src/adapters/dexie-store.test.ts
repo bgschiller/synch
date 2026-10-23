@@ -537,7 +537,6 @@ describe("DexieSyncStore", () => {
   });
   it.each([3, 4])("keeps newer local edits when an ack arrives after remote revision %i", async (remoteRevision) => {
     const store = await createDexieSyncStore(createPlugin());
-    const key = new Uint8Array(32).fill(17);
     const path = "note.md";
     try {
       await store.upsertEntry({
@@ -547,7 +546,7 @@ describe("DexieSyncStore", () => {
       const pending: PendingMutationRow = {
         entryId: "note", mutationId: "newer-edit", op: "upsert", baseRevision: remoteRevision,
         baseBlobId: "remote", baseHash: "remote-hash", blobId: "new-local", hash: "new-hash", createdAt: 20,
-        encryptedMetadata: await encryptSyncMetadata(key, { path, hash: "new-hash" }, {
+        encryptedMetadata: await encryptSyncMetadata({ path, hash: "new-hash" }, {
           entryId: "note", revision: remoteRevision + 1, op: "upsert", blobId: "new-local",
         }),
       };
@@ -561,13 +560,13 @@ describe("DexieSyncStore", () => {
         mutation: { ...pending, mutationId: "earlier-edit", baseRevision: 2, blobId: "accepted", hash: "accepted-hash" },
         metadata: { path, hash: "accepted-hash" }, acceptedRevision: 3,
         remoteBlobId: "accepted", localHash: "accepted-hash", acceptedAt: 15,
-      }], { remoteVaultKey: key });
+      }]);
       const after = await store.getEntryStateById("note");
       expect(after?.local).toEqual(before?.local);
       expect(after?.dirty).toMatchObject({ mutationId: "newer-edit", baseRevision: remoteRevision, hash: "new-hash" });
       if (remoteRevision === 4) expect(after).toEqual(before);
       const dirty = after!.dirty!;
-      await expect(decryptSyncMetadata(key, dirty.encryptedMetadata, {
+      await expect(decryptSyncMetadata(dirty.encryptedMetadata, {
         entryId: "note", revision: remoteRevision + 1, op: "upsert", blobId: "new-local",
       })).resolves.toEqual({ path, hash: "new-hash" });
     } finally {

@@ -110,25 +110,10 @@ export class CliAppContext {
       getStoredRemoteVaultId: () =>
         this.credentials.getVaultCredential(this.options.vaultPath)
           ?.remoteVaultId ?? null,
-      getStoredRemoteVaultKeySecret: () =>
-        this.credentials.getVaultCredential(this.options.vaultPath)?.secret ??
-        null,
-      saveStoredRemoteVaultKeySecret: async (secret) => {
-        if (!secret) {
-          await this.credentials.clearVaultCredential(this.options.vaultPath);
-          return;
-        }
-
-        // The manager sets its active session before persisting the secret,
-        // so the connected vault ID is available here.
-        const remoteVaultId = this.remoteVaultManager.getRemoteVaultId();
-        if (!remoteVaultId) {
-          throw new Error("No active remote vault session to persist.");
-        }
+      saveStoredRemoteVaultId: async (vaultId) => {
         await this.credentials.saveVaultCredential(
           this.options.vaultPath,
-          remoteVaultId,
-          secret,
+          vaultId,
         );
       },
       refreshUi: () => {},
@@ -180,7 +165,6 @@ export class CliAppContext {
       invalidateSyncToken: () => {
         this.syncTokenManager.clear();
       },
-      getRemoteVaultKey: () => this.getActiveRemoteVaultKey(),
       getSyncFileRules: () => this.getSyncFileRules(),
       getVaultConfigSyncRules: () => this.getVaultConfigSyncRules(),
       shouldDeferSyncWork: () => false,
@@ -225,15 +209,6 @@ export class CliAppContext {
 
   getSyncFileRules(): SyncFileRules {
     return DEFAULT_SYNC_FILE_RULES;
-  }
-
-  getActiveRemoteVaultKey(): Uint8Array {
-    const session = this.remoteVaultManager.getActiveSession();
-    if (!session) {
-      throw new Error("Vault session is not loaded.");
-    }
-
-    return session.remoteVaultKey;
   }
 
   getVaultConfigSyncRules(): VaultConfigSyncRules {

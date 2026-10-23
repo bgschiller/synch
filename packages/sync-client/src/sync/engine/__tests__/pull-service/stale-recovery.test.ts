@@ -6,7 +6,7 @@ import { SyncPullService } from "../../pull-service";
 import {
   arrangePendingUpsertWithCachedBase, createBlobClient, createCommit,
   createRealtimeSession, createToken, createVaultAdapter, encryptRemoteMetadata,
-  encryptTestBlob, hashText, TEST_VAULT_KEY,
+  encryptTestBlob, hashText,
 } from "./helpers";
 
 async function setup(remoteBody = "Remote title\n\noriginal line\n") {
@@ -26,7 +26,7 @@ async function setup(remoteBody = "Remote title\n\noriginal line\n") {
   const commit = createCommit({ cursor: 90, entryId: "note", revision: 3, blobId: "remote", encryptedMetadata });
   const service = new SyncPullService({
     contentRuntime: createTestContentRuntime(), getSyncToken: async () => createToken(),
-    getSyncStore: () => store, getRemoteVaultKey: () => TEST_VAULT_KEY, vaultAdapter: adapter,
+    getSyncStore: () => store, vaultAdapter: adapter,
     blobClient: createBlobClient({ blobs: { remote: await encryptTestBlob("remote", new TextEncoder().encode(remoteBody)) } }),
   });
   return { store, adapter, commit, service, localBody, remoteBody };
@@ -49,7 +49,7 @@ describe("targeted stale entry recovery", () => {
     const pending = await test.store.getDirtyEntryMutation("note");
     expect(pending).toMatchObject({ baseRevision: 3, baseBlobId: "remote" });
     expect(test.adapter.text("note.md")).toBe("Remote title\n\nlocal line\n");
-    expect(await decryptSyncMetadata(TEST_VAULT_KEY, pending!.encryptedMetadata, {
+    expect(await decryptSyncMetadata(pending!.encryptedMetadata, {
       entryId: "note", revision: 4, op: "upsert", blobId: pending!.blobId,
     })).toMatchObject({ path: "note.md", hash: await hashText("Remote title\n\nlocal line\n") });
     // Cursor 101 may include unrelated changes that recovery has not applied.

@@ -25,7 +25,6 @@ export type LocalFileScanner = SyncVaultScanner;
 
 export interface SyncLocalReconcileServiceDeps extends SyncContentRuntimeDeps {
   getSyncStore: () => SyncLocalReconcileStore | null;
-  getRemoteVaultKey: () => Uint8Array;
   scanner: LocalFileScanner;
   shouldSyncPath(path: string): boolean;
   hashConcurrency?: number;
@@ -48,8 +47,7 @@ export class SyncLocalReconcileService {
 
   async reconcileOnce(): Promise<ReconcileOnceResult> {
     const store = this.requireStore();
-    const remoteVaultKey = this.deps.getRemoteVaultKey();
-    const metadataCrypto = createSyncCryptoContext(remoteVaultKey);
+    const metadataCrypto = createSyncCryptoContext();
     try {
       return await retrySyncStateWork(async () => {
         const snapshot = syncStateCoordinator(store).watch();

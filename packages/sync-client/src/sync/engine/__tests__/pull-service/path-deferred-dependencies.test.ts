@@ -13,7 +13,6 @@ import {
   encryptTestBlob,
   hashText,
   ignoreProgress,
-  TEST_VAULT_KEY,
 } from "./helpers";
 
 describe("SyncPullService deferred path dependencies", () => {
@@ -116,7 +115,6 @@ describe("SyncPullService deferred path dependencies", () => {
       contentRuntime: createTestContentRuntime({ maxBytesInFlight }),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: client,
       applyWindowSize: 2,
@@ -250,7 +248,6 @@ describe("SyncPullService deferred path dependencies", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: client,
       applyWindowSize: 2,

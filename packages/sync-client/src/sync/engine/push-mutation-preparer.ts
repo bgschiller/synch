@@ -184,7 +184,7 @@ export class PushMutationPreparer {
       return this.deps.getSyncCryptoContext();
     }
 
-    this.fallbackCryptoContext ??= createSyncCryptoContext(this.deps.getRemoteVaultKey());
+    this.fallbackCryptoContext ??= createSyncCryptoContext();
     return this.fallbackCryptoContext;
   }
 
@@ -238,7 +238,6 @@ export class PushMutationPreparer {
       const remote = await store.getRemoteStateById(mutation.entryId);
       const local = await store.getLocalStateById(mutation.entryId);
       const queued = await queueLocalUpsertMutation(store, {
-        remoteVaultKey: this.deps.getRemoteVaultKey(),
         path,
         entryId: mutation.entryId,
         base: remote ?? {

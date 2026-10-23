@@ -24,7 +24,7 @@ export class Device {
       changeSource: { start: context => { this.events = context; } },
       httpClient: this.network.httpClient, createWebSocket: this.network.createWebSocket,
       getApiBaseUrl: () => baseUrl, getSyncToken: () => remote.token(this.localVaultId), invalidateSyncToken() {},
-      getRemoteVaultKey: () => this.key, getConfigDir: () => ".obsidian",
+      getConfigDir: () => ".obsidian",
       getSyncFileRules: () => DEFAULT_SYNC_FILE_RULES, getVaultConfigSyncRules: () => DEFAULT_VAULT_CONFIG_SYNC_RULES,
       shouldDeferSyncWork: () => false, hasActiveRemoteVaultSession: () => true, isOffline: () => false,
       diagnostics: this.diagnostics, onSyncError: error => { this.errors.push(error); },

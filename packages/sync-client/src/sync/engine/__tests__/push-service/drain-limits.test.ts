@@ -11,7 +11,6 @@ import {
   createToken,
   encryptMutationMetadata,
   ignoreProgress,
-  TEST_VAULT_KEY,
   unusedBlobClient,
 } from "./helpers";
 
@@ -59,7 +58,6 @@ describe("SyncPushService drain: limits", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(path) {
           if (path === "Folder/too-large.md") {
@@ -154,7 +152,6 @@ describe("SyncPushService drain: limits", () => {
         contentRuntime: createTestContentRuntime(),
         getSyncToken: async () => createToken(),
         getSyncStore: () => store,
-        getRemoteVaultKey: () => TEST_VAULT_KEY,
         fileReader: {
           async readBytes(path) {
             if (path === "Folder/upload-413.md") {
@@ -227,7 +224,6 @@ describe("SyncPushService drain: limits", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(path) {
           throw new Error(`unexpected read for ${path}`);
@@ -276,7 +272,6 @@ describe("SyncPushService drain: limits", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(path) {
           throw new Error(`unexpected read for ${path}`);
@@ -348,7 +343,6 @@ describe("SyncPushService drain: limits", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(path) {
           if (path === "Folder/unlimited-size.md") {
@@ -434,7 +428,6 @@ describe("SyncPushService drain: limits", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(path) {
           if (path === "Folder/new.md") {
@@ -538,7 +531,6 @@ describe("SyncPushService drain: limits", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(path) {
           if (
@@ -628,7 +620,6 @@ describe("SyncPushService drain: limits", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(path) {
           if (path === "Folder/known-quota.md") {
@@ -710,7 +701,6 @@ describe("SyncPushService drain: limits", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       fileReader: {
         async readBytes(path) {
           if (path === "Folder/near-quota.md") {

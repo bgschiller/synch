@@ -124,12 +124,9 @@ export class SharingModal extends Modal {
     const heading = header.createDiv({ cls: "synch-sharing-vault-heading" });
     heading.createEl("h3", { text: vault.name });
     heading.createEl("p", { text: organizationName, cls: "synch-sharing-hint" });
-    const key =
-      this.activeSession()?.summary.vaultId === vault.id
-        ? this.activeSession()?.remoteVaultKey
-        : undefined;
+    const isActiveVault = this.activeSession()?.summary.vaultId === vault.id;
     header.createSpan({
-      text: t(vault.status === "pending_key" ? "sharing.accessNeeded" : key ? "sharing.connected" : "sharing.notConnected"),
+      text: t(vault.status === "pending_key" ? "sharing.accessNeeded" : isActiveVault ? "sharing.connected" : "sharing.notConnected"),
       cls: "synch-sharing-badge",
     });
     const access = section.createDiv({ cls: "synch-sharing-panel" });
@@ -147,7 +144,7 @@ export class SharingModal extends Modal {
     for (const request of requests) {
       if (request.userId !== this.manager.userId && request.status === "pending" && vault.canManage) {
         visibleRequests++;
-        this.approvalForm(access, vault, request, key);
+        this.approvalForm(access, vault, request);
       }
     }
     if (!visibleRequests && vault.status === "active") {

@@ -8,7 +8,7 @@ import { PushNoProgressError, SyncPushService } from "../../push-service";
 import { createRealtimeClient } from "../auto-sync/helpers";
 import {
   createPushSession, createToken, encryptMutationMetadata,
-  ignoreProgress, TEST_VAULT_KEY,
+  ignoreProgress,
 } from "./helpers";
 
 function gate() {
@@ -40,7 +40,6 @@ async function fixture(count: number) {
     contentRuntime: createTestContentRuntime(),
     getSyncToken: async () => createToken(),
     getSyncStore: () => store,
-    getRemoteVaultKey: () => TEST_VAULT_KEY,
     fileReader: { async readBytes() { return body; } },
   };
   return { store, session, deps };

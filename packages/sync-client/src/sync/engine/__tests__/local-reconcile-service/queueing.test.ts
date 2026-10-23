@@ -10,7 +10,6 @@ import {
   encryptTestMetadata,
   localFile,
   putTestBaseBlob,
-  TEST_VAULT_KEY,
 } from "./helpers";
 
 describe("SyncLocalReconcileService queueing", () => {
@@ -29,7 +28,6 @@ describe("SyncLocalReconcileService queueing", () => {
     const service = new SyncLocalReconcileService({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldSyncPath: () => true,
       scanner: { async listFiles() { return [file]; } },
     });
@@ -60,7 +58,6 @@ describe("SyncLocalReconcileService queueing", () => {
     const service = new SyncLocalReconcileService({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldSyncPath: () => true,
       scanner: {
         async listFiles() {
@@ -133,7 +130,6 @@ describe("SyncLocalReconcileService queueing", () => {
     const service = new SyncLocalReconcileService({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldSyncPath: () => true,
       scanner: {
         async listFiles() {
@@ -199,14 +195,12 @@ describe("SyncLocalReconcileService queueing", () => {
     const recorder = new SyncEventRecorder({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
     });
     await recorder.recordRename(oldPath, nextPath, renamedBytes);
 
     const service = new SyncLocalReconcileService({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldSyncPath: () => true,
       scanner: {
         async listFiles() {
@@ -274,7 +268,6 @@ describe("SyncLocalReconcileService queueing", () => {
     const service = new SyncLocalReconcileService({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldSyncPath: () => true,
       scanner: {
         async listFiles() {
@@ -350,7 +343,6 @@ describe("SyncLocalReconcileService queueing", () => {
     const service = new SyncLocalReconcileService({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldSyncPath: () => true,
       scanner: {
         async listFiles() {
@@ -413,7 +405,6 @@ describe("SyncLocalReconcileService queueing", () => {
     const service = new SyncLocalReconcileService({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       shouldSyncPath: () => true,
       scanner: {
         async listFiles() {
@@ -512,7 +503,6 @@ describe("SyncLocalReconcileService queueing", () => {
     const service = new SyncLocalReconcileService({
       contentRuntime: createTestContentRuntime(),
       getSyncStore: () => observedStore,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       hashConcurrency: 2,
       shouldSyncPath: () => true,
       scanner: {

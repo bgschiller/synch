@@ -9,8 +9,6 @@ import {
   encryptSyncMetadata,
 } from "./crypto";
 
-const TEST_VAULT_KEY = new Uint8Array(Array.from({ length: 32 }, (_, index) => index + 1));
-const OTHER_VAULT_KEY = new Uint8Array(Array.from({ length: 32 }, (_, index) => 255 - index));
 const TEST_METADATA_CONTEXT = {
   entryId: "entry-1",
   revision: 1,
@@ -24,7 +22,6 @@ const TEST_BLOB_CONTEXT = {
 describe("identity sync crypto", () => {
   it("stores metadata as plaintext JSON (no envelope)", async () => {
     const encrypted = await encryptSyncMetadata(
-      TEST_VAULT_KEY,
       { path: "Folder/note.md", hash: "hash-1" },
       TEST_METADATA_CONTEXT,
     );
@@ -35,23 +32,22 @@ describe("identity sync crypto", () => {
 
   it("round-trips metadata through parse/validate", async () => {
     const encrypted = await encryptSyncMetadata(
-      TEST_VAULT_KEY,
       { path: "Folder/note.md", hash: "hash-1" },
       TEST_METADATA_CONTEXT,
     );
 
     await expect(
-      decryptSyncMetadata(TEST_VAULT_KEY, encrypted, TEST_METADATA_CONTEXT),
+      decryptSyncMetadata(encrypted, TEST_METADATA_CONTEXT),
     ).resolves.toEqual({ path: "Folder/note.md", hash: "hash-1" });
   });
 
   it("round-trips binary blobs without adding an envelope", async () => {
     const plaintext = new Uint8Array([1, 2, 3, 4, 5, 6]);
-    const encrypted = await encryptSyncBlob(TEST_VAULT_KEY, plaintext, TEST_BLOB_CONTEXT);
+    const encrypted = await encryptSyncBlob(plaintext, TEST_BLOB_CONTEXT);
 
     expect(encrypted).toEqual(plaintext);
     await expect(
-      decryptSyncBlob(TEST_VAULT_KEY, encrypted, TEST_BLOB_CONTEXT),
+      decryptSyncBlob(encrypted, TEST_BLOB_CONTEXT),
     ).resolves.toEqual(plaintext);
   });
 
@@ -61,7 +57,7 @@ describe("identity sync crypto", () => {
   });
 
   it("reuses a vault-scoped crypto context across payload types", async () => {
-    const context = createSyncCryptoContext(TEST_VAULT_KEY);
+    const context = createSyncCryptoContext();
     const metadata = await context.encryptMetadata(
       { path: "Folder/context.md", hash: "hash-context" },
       TEST_METADATA_CONTEXT,
@@ -79,41 +75,38 @@ describe("identity sync crypto", () => {
 
   it("ignores the vault key (any key decrypts)", async () => {
     const encrypted = await encryptSyncMetadata(
-      TEST_VAULT_KEY,
       { path: "Folder/secret.md", hash: "hash-1" },
       TEST_METADATA_CONTEXT,
     );
 
     await expect(
-      decryptSyncMetadata(OTHER_VAULT_KEY, encrypted, TEST_METADATA_CONTEXT),
+      decryptSyncMetadata(encrypted, TEST_METADATA_CONTEXT),
     ).resolves.toEqual({ path: "Folder/secret.md", hash: "hash-1" });
   });
 
   it("ignores the entry/blob context (no AAD binding)", async () => {
     const metadata = await encryptSyncMetadata(
-      TEST_VAULT_KEY,
       { path: "Folder/secret.md", hash: "hash-1" },
       TEST_METADATA_CONTEXT,
     );
     const blob = await encryptSyncBlob(
-      TEST_VAULT_KEY,
       new Uint8Array([1, 2, 3]),
       TEST_BLOB_CONTEXT,
     );
 
     await expect(
-      decryptSyncMetadata(TEST_VAULT_KEY, metadata, {
+      decryptSyncMetadata(metadata, {
         ...TEST_METADATA_CONTEXT,
         entryId: "entry-2",
       }),
     ).resolves.toEqual({ path: "Folder/secret.md", hash: "hash-1" });
     await expect(
-      decryptSyncBlob(TEST_VAULT_KEY, blob, { blobId: "blob-2" }),
+      decryptSyncBlob(blob, { blobId: "blob-2" }),
     ).resolves.toEqual(new Uint8Array([1, 2, 3]));
   });
 
   it("treats dispose as a no-op", async () => {
-    const context = createSyncCryptoContext(TEST_VAULT_KEY);
+    const context = createSyncCryptoContext();
     context.dispose();
 
     await expect(

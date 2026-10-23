@@ -8,7 +8,7 @@ import { SyncPushService } from "../push-service";
 import { SyncLocalReconcileService } from "../local-reconcile-service";
 import {
   createBlobClient, createCommit, createRealtimeSession, createToken, createVaultAdapter,
-  encryptRemoteMetadata, encryptTestBlob, hashText, TEST_VAULT_KEY,
+  encryptRemoteMetadata, encryptTestBlob, hashText,
 } from "./pull-service/helpers";
 import { createPushSession } from "./push-service/helpers";
 
@@ -26,7 +26,7 @@ async function fixture() {
   const store = createTestSyncStore();
   const adapter = createVaultAdapter({ "note.md": base });
   const contentRuntime = createTestContentRuntime();
-  const deps = { contentRuntime, getSyncStore: () => store, getRemoteVaultKey: () => TEST_VAULT_KEY };
+  const deps = { contentRuntime, getSyncStore: () => store };
   await store.upsertEntry({
     entryId: "note", path: "note.md", revision: 2, blobId: "base", hash: await hashText(base),
     deleted: false, updatedAt: 1, localMtime: null, localSize: null,
@@ -53,7 +53,7 @@ async function expectMerged(test: Awaited<ReturnType<typeof fixture>>, body = "R
   expect((await test.store.getRemoteStateById("note"))?.revision).toBe(3);
   const pending = await test.store.getDirtyEntryMutation("note");
   expect(pending).toMatchObject({ baseRevision: 3, hash: await hashText(body) });
-  expect(await decryptSyncMetadata(TEST_VAULT_KEY, pending!.encryptedMetadata, {
+  expect(await decryptSyncMetadata(pending!.encryptedMetadata, {
     entryId: "note", revision: 4, op: "upsert", blobId: pending!.blobId,
   })).toEqual({ path: "note.md", hash: await hashText(body) });
 }
@@ -188,7 +188,7 @@ describe("local edits overlapping remote sync", () => {
     const pending = await test.store.getDirtyEntryMutation("note");
     expect(pending).toMatchObject({ baseRevision: 3, hash: await hashText(newer) });
     expect(test.adapter.text("note.md")).toBe(newer);
-    await expect(decryptSyncMetadata(TEST_VAULT_KEY, pending!.encryptedMetadata, {
+    await expect(decryptSyncMetadata(pending!.encryptedMetadata, {
       entryId: "note", revision: 4, op: "upsert", blobId: pending!.blobId,
     })).resolves.toEqual({ path: "note.md", hash: await hashText(newer) });
   });
@@ -210,7 +210,7 @@ describe("local edits overlapping remote sync", () => {
     expect(await test.store.getLocalStateById("note")).toMatchObject({ path: null, deleted: true });
     expect(await test.store.listDirtyEntries()).toMatchObject([{ entryId: "note", op: "delete", baseRevision: 2 }]);
     const pending = (await test.store.getDirtyEntryMutation("note"))!;
-    await expect(decryptSyncMetadata(TEST_VAULT_KEY, pending.encryptedMetadata, {
+    await expect(decryptSyncMetadata(pending.encryptedMetadata, {
       entryId: "note", revision: 3, op: "delete", blobId: null,
     })).resolves.toEqual({ path: "renamed.md", hash: null });
   });

@@ -20,9 +20,7 @@ it("restores the login API URL regardless of the vault directory before initiali
   const credentialsPath = path.join(tempDir, "credentials.json");
   const vaultPath = path.join(tempDir, "vault");
   const credentials = new CliCredentialsStore(credentialsPath);
-  await credentials.saveVaultCredential(vaultPath, "vault-1", {
-    remoteVaultKey: new Uint8Array(32),
-  });
+  await credentials.saveVaultCredential(vaultPath, "vault-1");
   await credentials.setSessionToken("session-token", "https://login.example");
 
   const ctx = new CliAppContext({ vaultPath, credentialsPath });

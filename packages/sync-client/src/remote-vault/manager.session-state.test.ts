@@ -1,22 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { StoredRemoteVaultKeySecret } from "./types";
 import type { RemoteVaultBootstrapResponse } from "./types";
 import { createManager } from "./manager-test-helpers";
 
 describe("RemoteVaultManager session state", () => {
   it("disconnects the current vault from this device", async () => {
-    const savedVaults: Array<StoredRemoteVaultKeySecret | null> = [];
     const notify = vi.fn();
     const refreshUi = vi.fn();
-    const storedVault: StoredRemoteVaultKeySecret = {
-      remoteVaultKey: new Uint8Array([1, 2, 3]),
-    };
 
     const manager = createManager({
       storedVaultId: "vault-connected",
-      storedVault,
-      savedVaults,
       refreshUi,
       notify,
     });
@@ -26,7 +19,6 @@ describe("RemoteVaultManager session state", () => {
 
     await manager.disconnectRemoteVault();
 
-    expect(savedVaults[savedVaults.length - 1]).toBeNull();
     expect(manager.getActiveSession()).toBeNull();
     expect(notify).toHaveBeenCalledWith({
       type: "disconnected",
@@ -59,7 +51,6 @@ describe("RemoteVaultManager session state", () => {
 
     expect(manager.getActiveSession()?.summary.vaultId).toBe("vault-restored");
     expect(manager.getActiveSession()?.summary.vaultName).toBe("Restored");
-    expect(manager.getActiveSession()?.remoteVaultKey).toEqual(new Uint8Array(32));
     expect(refreshUi).toHaveBeenCalled();
   });
 });

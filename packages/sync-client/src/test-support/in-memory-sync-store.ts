@@ -345,7 +345,6 @@ export class InMemorySyncStore implements SyncStore {
 
   async applyAcceptedPushBatch(
     accepted: AcceptedPushMutationRow[],
-    options: { remoteVaultKey: Uint8Array },
   ): Promise<void> {
     for (const item of accepted) {
       const state = this.getOrCreateEntry(item.mutation.entryId);
@@ -384,7 +383,6 @@ export class InMemorySyncStore implements SyncStore {
         state.base = remoteToBase(remote);
       } else {
         const metadata = await decryptSyncMetadata(
-          options.remoteVaultKey,
           currentPending.encryptedMetadata,
           mutationMetadataContext(currentPending),
         );
@@ -397,7 +395,6 @@ export class InMemorySyncStore implements SyncStore {
         state.dirty = {
           ...rebased,
           encryptedMetadata: await encryptSyncMetadata(
-            options.remoteVaultKey,
             metadata,
             mutationMetadataContext(rebased),
           ),

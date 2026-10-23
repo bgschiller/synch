@@ -44,7 +44,6 @@ import {
 } from "./pull-entry-state-internal";
 
 export interface PullEntryStateApplierDeps extends SyncContentRuntimeDeps {
-  getRemoteVaultKey: () => Uint8Array;
   getConflictPolicy?: () => SyncConflictPolicy;
   vaultAdapter: PullEntryStateVaultAdapter;
   eventGate?: SyncEventGateLike;
@@ -126,8 +125,6 @@ export class PullEntryStateApplier {
   async createManifestItems(
     states: RemoteEntryState[],
   ): Promise<PullEntryStateManifestItem[]> {
-    const remoteVaultKey = this.deps.getRemoteVaultKey();
-
     // Settle every metadata worker before returning a failed prefetched page.
     const results = await mapWithConcurrency(
       states,
@@ -139,7 +136,6 @@ export class PullEntryStateApplier {
             item: {
               state,
               metadata: await decryptSyncMetadata(
-                remoteVaultKey,
                 state.encryptedMetadata,
                 metadataContextFromRemoteState(state),
               ),

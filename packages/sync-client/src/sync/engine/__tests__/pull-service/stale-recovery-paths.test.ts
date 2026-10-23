@@ -9,7 +9,7 @@ import { createPushSession } from "../push-service/helpers";
 import {
   createBlobClient, createCommit, createRealtimeSession, createToken,
   createVaultAdapter, encryptPendingMetadata, encryptRemoteMetadata,
-  encryptTestBlob, hashText, TEST_VAULT_KEY,
+  encryptTestBlob, hashText,
 } from "./helpers";
 
 async function setup(recoveredCursor = 90) {
@@ -50,7 +50,7 @@ async function setup(recoveredCursor = 90) {
   });
   const service = new SyncPullService({
     contentRuntime: createTestContentRuntime(), getSyncToken: async () => createToken(),
-    getSyncStore: () => store, getRemoteVaultKey: () => TEST_VAULT_KEY,
+    getSyncStore: () => store,
     shouldUseLatestRemoteVersion: (candidate) => candidate.startsWith(".obsidian/"),
     // Dependencies must remain together even with a smaller ordinary apply window.
     applyWindowSize: 1, vaultAdapter: adapter,
@@ -114,7 +114,7 @@ describe("stale recovery path owners", () => {
     let published = owner;
     const push = new SyncPushService({
       contentRuntime: createTestContentRuntime(), getSyncStore: () => test.store,
-      getSyncToken: async () => createToken(), getRemoteVaultKey: () => TEST_VAULT_KEY,
+      getSyncToken: async () => createToken(),
       fileReader: { readBytes: async (path) => test.adapter.bytes(path)! },
       blobClient: { uploadBlob: async () => {} },
     });
@@ -282,7 +282,7 @@ describe("stale recovery path owners", () => {
     const list = vi.spyOn(session, "listEntryStates");
     const service = new SyncPullService({
       contentRuntime: createTestContentRuntime(), getSyncToken: async () => createToken(),
-      getSyncStore: () => store, getRemoteVaultKey: () => TEST_VAULT_KEY,
+      getSyncStore: () => store,
       vaultAdapter: adapter, blobClient: createBlobClient({ blobs }), applyWindowSize: 1,
     });
     await service.recoverEntryStates(session, ["a"]);

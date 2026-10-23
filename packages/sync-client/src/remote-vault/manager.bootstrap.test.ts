@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { StoredRemoteVaultKeySecret } from "./types";
 import type {
   RemoteVaultBootstrapResponse,
   RemoteVaultSummaryResponse,
@@ -27,10 +26,7 @@ describe("RemoteVaultManager bootstrap", () => {
   });
 
   it("connects the selected remote vault", async () => {
-    const savedVaults: Array<StoredRemoteVaultKeySecret | null> = [];
-
     const manager = createManager({
-      savedVaults,
       remoteVaultClient: {
         listRemoteVaults: async (): Promise<RemoteVaultSummaryResponse> => ({
           vaults: [
@@ -54,7 +50,6 @@ describe("RemoteVaultManager bootstrap", () => {
 
     expect(summary.vaultId).toBe("vault-remote");
     expect(summary.vaultName).toBe("Remote");
-    expect(savedVaults).toEqual([]);
     expect(manager.getRemoteVaultStatus()).toEqual({
       state: "loaded",
       label: "Remote",
@@ -62,11 +57,10 @@ describe("RemoteVaultManager bootstrap", () => {
   });
 
   it("does not persist or activate a key when host safety changes during bootstrap", async () => {
-    const savedVaults: Array<StoredRemoteVaultKeySecret | null> = [];
     const refreshUi = vi.fn();
     const notify = vi.fn();
     const manager = createManager({
-      savedVaults, refreshUi, notify,
+      refreshUi, notify,
       remoteVaultClient: {
         getRemoteVaultBootstrap: async () => ({
           vault: remoteVaultSummary(),
@@ -80,7 +74,6 @@ describe("RemoteVaultManager bootstrap", () => {
     }, beforeActivate)).rejects.toThrow("Local vault is no longer empty");
     expect(beforeActivate).toHaveBeenCalledOnce();
     expect(manager.getActiveSession()).toBeNull();
-    expect(savedVaults).toEqual([]);
     expect(refreshUi).not.toHaveBeenCalled();
     expect(notify).not.toHaveBeenCalled();
   });

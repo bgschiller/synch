@@ -23,7 +23,6 @@ import { isAutoMergeTextPath } from "./text-merge-policy";
 
 export interface SyncEventRecorderDeps extends SyncContentRuntimeDeps {
   getSyncStore: () => SyncEventRecorderStore | null;
-  getRemoteVaultKey: () => Uint8Array;
   eventGate?: Pick<SyncEventGateLike, "isSuppressed">;
 }
 
@@ -127,7 +126,6 @@ export class SyncEventRecorder {
     }
 
     const queued = await queueLocalUpsertMutation(store, {
-      remoteVaultKey: this.deps.getRemoteVaultKey(),
       path,
       entryId,
       base: remote,
@@ -222,7 +220,6 @@ export class SyncEventRecorder {
     }
 
     const queued = await queueLocalUpsertMutation(store, {
-      remoteVaultKey: this.deps.getRemoteVaultKey(),
       path: nextPath,
       entryId: existing.entryId,
       base: remote,
@@ -285,7 +282,6 @@ export class SyncEventRecorder {
       }),
     );
     await queueLocalDeleteMutation(store, {
-      remoteVaultKey: this.deps.getRemoteVaultKey(),
       entryId: existing.entryId,
       base: remote,
       path,
@@ -310,15 +306,12 @@ export class SyncEventRecorder {
     store: SyncEventRecorderStore,
     path: string,
   ): Promise<LocalSyncEntryRow | null> {
-    const remoteVaultKey = this.deps.getRemoteVaultKey();
-
     for (const pending of await store.listDirtyEntries()) {
       if (pending.op !== "delete") {
         continue;
       }
 
       const metadata = await decryptSyncMetadata(
-        remoteVaultKey,
         pending.encryptedMetadata,
         {
           entryId: pending.entryId,

@@ -543,7 +543,6 @@ export class SqliteSyncStore implements SyncStore {
 
   async applyAcceptedPushBatch(
     accepted: AcceptedPushMutationRow[],
-    options: { remoteVaultKey: Uint8Array },
   ): Promise<void> {
     if (accepted.length === 0) {
       return;
@@ -559,7 +558,6 @@ export class SqliteSyncStore implements SyncStore {
             this.getEntryRecord(item.mutation.entryId) ??
               createEmptyEntryRecord(item.mutation.entryId),
             item,
-            options.remoteVaultKey,
           ),
         ),
       );

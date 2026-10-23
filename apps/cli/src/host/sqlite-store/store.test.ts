@@ -15,8 +15,6 @@ import { SqliteSyncStore } from "./store";
 let tempDir: string;
 let store: SqliteSyncStore;
 
-const remoteVaultKey = crypto.getRandomValues(new Uint8Array(32));
-
 beforeEach(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "synch-sqlite-store-"));
   store = SqliteSyncStore.open(path.join(tempDir, "sync.sqlite"));
@@ -51,7 +49,6 @@ async function makePendingUpsert(
     blobId,
     hash,
     encryptedMetadata: await encryptSyncMetadata(
-      remoteVaultKey,
       { path: filePath, hash },
       { entryId, revision: baseRevision + 1, op: "upsert", blobId },
     ),
@@ -359,7 +356,7 @@ describe("SqliteSyncStore parity with InMemorySyncStore", () => {
       await target.markEntryDirty(acceptedMutation);
       // Local file changed again while the push was in flight.
       await target.replaceDirtyEntry(replacedMutation);
-      await target.applyAcceptedPushBatch(accepted, { remoteVaultKey });
+      await target.applyAcceptedPushBatch(accepted);
     }
 
     const sqliteState = await store.getEntryStateById("e1");

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import type { StoredRemoteVaultKeySecret } from "./types";
 import type {
   CreateRemoteVaultResponse,
   RemoteVaultBootstrapResponse,
@@ -9,11 +8,9 @@ import { createManager } from "./manager-test-helpers";
 
 describe("RemoteVaultManager create", () => {
   it("creates a vault and stores a loaded session", async () => {
-    const savedVaults: Array<StoredRemoteVaultKeySecret | null> = [];
     const createCalls: Array<unknown> = [];
 
     const manager = createManager({
-      savedVaults,
       remoteVaultClient: {
         createRemoteVault: async (
           _apiBaseUrl: string,
@@ -50,7 +47,6 @@ describe("RemoteVaultManager create", () => {
 
     expect(summary.vaultId).toBe("vault-created");
     expect(summary.vaultName).toBe("Personal");
-    expect(savedVaults).toEqual([]);
     expect(manager.getActiveSession()?.summary.vaultId).toBe("vault-created");
     expect(createCalls).toHaveLength(1);
     expect(createCalls[0]).toMatchObject({

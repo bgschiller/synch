@@ -26,7 +26,6 @@ const DEFAULT_PULL_PREPARE_CONCURRENCY = 10;
 export interface SyncPullServiceDeps extends SyncContentRuntimeDeps {
   getSyncToken: () => Promise<SyncTokenResponse>;
   getSyncStore: () => SyncPullStore | null;
-  getRemoteVaultKey: () => Uint8Array;
   getConflictPolicy?: () => SyncConflictPolicy;
   shouldApplyRemotePath?: (path: string, deleted: boolean) => boolean;
   shouldUseLatestRemoteVersion?: (path: string) => boolean;
@@ -71,7 +70,6 @@ export class SyncPullService {
 
   constructor(private readonly deps: SyncPullServiceDeps) {
     this.entryStateApplier = new PullEntryStateApplier({
-      getRemoteVaultKey: () => this.deps.getRemoteVaultKey(),
       vaultAdapter: this.deps.vaultAdapter,
       eventGate: this.deps.eventGate,
       blobClient: this.deps.blobClient,

@@ -13,7 +13,6 @@ import {
   encryptTestBlob,
   hashText,
   ignoreProgress,
-  TEST_VAULT_KEY,
 } from "./helpers";
 
 /**
@@ -82,7 +81,6 @@ describe("SyncPullService rollback protection", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: client,
       onProgress: ignoreProgress,
@@ -162,7 +160,6 @@ describe("SyncPullService rollback protection", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: client,
       onProgress: ignoreProgress,
@@ -233,7 +230,6 @@ describe("SyncPullService rollback protection", () => {
       contentRuntime: createTestContentRuntime(),
       getSyncToken: async () => createToken(),
       getSyncStore: () => store,
-      getRemoteVaultKey: () => TEST_VAULT_KEY,
       vaultAdapter: adapter,
       blobClient: client,
       onProgress: ignoreProgress,

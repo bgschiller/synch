@@ -74,7 +74,7 @@ export class Device {
         return response;
       } }, createWebSocket: this.transport.createWebSocket,
       getApiBaseUrl: () => baseUrl, getSyncToken: () => remote.token(this.localId), invalidateSyncToken() {},
-      getRemoteVaultKey: () => key, getConfigDir: () => ".obsidian",
+      getConfigDir: () => ".obsidian",
       getSyncFileRules: () => ({ ...DEFAULT_SYNC_FILE_RULES, includeOtherFiles: true }),
       getVaultConfigSyncRules: () => DEFAULT_VAULT_CONFIG_SYNC_RULES,
       shouldDeferSyncWork: () => this.deferred, hasActiveRemoteVaultSession: () => true, isOffline: () => false,
