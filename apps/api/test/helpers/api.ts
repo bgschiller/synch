@@ -203,7 +203,7 @@ export async function signUpAndCreateVault(
 			"content-type": "application/json",
 			cookie: account.sessionCookie,
 		},
-		body: JSON.stringify({ name: vaultName, initialWrapper: DEFAULT_VAULT_WRAPPER }),
+		body: JSON.stringify({ name: vaultName }),
 	});
 	assertStatus(createdVault.response, 201, 299, "create-vault");
 

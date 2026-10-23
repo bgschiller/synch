@@ -6,7 +6,6 @@ import {
 import type {
 	VaultBootstrapRecord,
 	VaultKeyEnvelope,
-	VaultKeyWrapperInput,
 	VaultKeyWrapperRecord,
 	VaultPurgeResult,
 	VaultRecord,
@@ -40,7 +39,6 @@ export class VaultApplicationService implements VaultService {
 	async createVault(
 		userId: string,
 		name: string,
-		initialWrapper: VaultKeyWrapperInput,
 		selectedOrganizationId?: string,
 	): Promise<VaultRecord> {
 		const organizationId = selectedOrganizationId ?? await this.catalogStore.readDefaultOrganizationIdForUser(userId);
@@ -75,7 +73,6 @@ export class VaultApplicationService implements VaultService {
 			userId,
 			organizationId,
 			name,
-			initialWrapper,
             policy.limits.syncedVaults,
 		);
 	}

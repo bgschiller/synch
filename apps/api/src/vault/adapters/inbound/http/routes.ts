@@ -40,16 +40,12 @@ export function registerVaultRoutes(
 			z.object({
 				organizationId: z.string().min(1).optional(),
 				name: z.string().trim().min(1),
-				initialWrapper: z.object({
-					kind: z.literal("password"),
-					envelope: vaultKeyEnvelopeSchema,
-				}),
 			}),
 		),
 		async (c) => {
 			const user = c.var.user;
 			const body = c.req.valid("json");
-			const created = await deps.vaultService.createVault(user.id, body.name, body.initialWrapper, body.organizationId);
+			const created = await deps.vaultService.createVault(user.id, body.name, body.organizationId);
 
 			return c.json(
 				{

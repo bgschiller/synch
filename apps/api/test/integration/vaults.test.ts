@@ -65,56 +65,8 @@ describe("vault integration", () => {
 		expect(bootstrap.json?.vault.organizationId).toBe(primary.organizationId);
 		expect(bootstrap.json?.vault.name).toBe(primary.vaultName);
 		expect(bootstrap.json?.vault.activeKeyVersion).toBe(1);
-		expect(bootstrap.json?.wrappers).toHaveLength(1);
-		expect(bootstrap.json?.wrappers[0]?.kind).toBe("password");
-		expect(bootstrap.json?.wrappers[0]?.keyVersion).toBe(1);
-		expect(bootstrap.json?.wrappers[0]?.envelope.kdf.name).toBe("argon2id");
-	});
-
-	it.each([
-		{
-			name: "excessive Argon2 memory",
-			mutate: (wrapper: typeof DEFAULT_VAULT_WRAPPER) => {
-				wrapper.envelope.kdf.memoryKiB = 1_048_576;
-			},
-		},
-		{
-			name: "invalid salt base64",
-			mutate: (wrapper: typeof DEFAULT_VAULT_WRAPPER) => {
-				wrapper.envelope.kdf.salt = "not-base64";
-			},
-		},
-		{
-			name: "incorrect nonce length",
-			mutate: (wrapper: typeof DEFAULT_VAULT_WRAPPER) => {
-				wrapper.envelope.wrap.nonce = "AAECAwQFBgc=";
-			},
-		},
-		{
-			name: "incorrect ciphertext length",
-			mutate: (wrapper: typeof DEFAULT_VAULT_WRAPPER) => {
-				wrapper.envelope.wrap.ciphertext =
-					"c3luY3ZhdWx0LXdyYXBwZWQtdmF1bHQta2V5LXYxLXRlc3QtY2lwaGVydGV4dA==";
-			},
-		},
-	])("rejects an unsafe vault key envelope: $name", async ({ mutate }) => {
-		const account = await signUpAccount();
-		const wrapper = structuredClone(DEFAULT_VAULT_WRAPPER);
-		mutate(wrapper);
-
-		const created = await jsonRequest("/v1/vaults", {
-			method: "POST",
-			headers: {
-				"content-type": "application/json",
-				cookie: account.sessionCookie,
-			},
-			body: JSON.stringify({
-				name: "Unsafe envelope",
-				initialWrapper: wrapper,
-			}),
-		});
-
-		expect(created.response.status).toBe(400);
+		// Vaults no longer have a password, so no key wrappers are created.
+		expect(bootstrap.json?.wrappers).toHaveLength(0);
 	});
 
 	it("rejects sync token issuance for another user's vault", async () => {
@@ -269,7 +221,6 @@ describe("vault integration", () => {
 			},
 			body: JSON.stringify({
 				name: "Replacement",
-				initialWrapper: DEFAULT_VAULT_WRAPPER,
 			}),
 		});
 		expect(created.response.status).toBe(201);
@@ -289,7 +240,6 @@ describe("vault integration", () => {
 				},
 				body: JSON.stringify({
 					name: "Shared Name",
-					initialWrapper: DEFAULT_VAULT_WRAPPER,
 				}),
 			},
 		);
@@ -298,7 +248,7 @@ describe("vault integration", () => {
 		expect(duplicate.text).toContain("vault_name_exists");
 	});
 
-	it("rolls back vault creation when the initial wrapper cannot be stored", async () => {
+	it("rolls back vault creation when the creator is not an organization member", async () => {
 		const account = await signUpAccount();
 		const db = createDb(env.DB);
 		const repository = new DrizzleVaultStore(db);
@@ -313,7 +263,6 @@ describe("vault integration", () => {
 				"missing-user",
 				organizationId,
 				vaultName,
-				DEFAULT_VAULT_WRAPPER,
 			),
 		).rejects.toThrow();
 
@@ -402,7 +351,6 @@ describe("vault integration", () => {
 			},
 			body: JSON.stringify({
 				name: "Personal",
-				initialWrapper: DEFAULT_VAULT_WRAPPER,
 			}),
 		});
 
@@ -423,7 +371,6 @@ describe("vault integration", () => {
 				},
 				body: JSON.stringify({
 					name: "Self Hosted Work",
-					initialWrapper: DEFAULT_VAULT_WRAPPER,
 				}),
 			},
 		);

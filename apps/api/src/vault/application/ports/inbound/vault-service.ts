@@ -1,7 +1,6 @@
 import type {
 	VaultBootstrapRecord,
 	VaultKeyEnvelope,
-	VaultKeyWrapperInput,
 	VaultKeyWrapperRecord,
 	VaultPurgeResult,
 	VaultRecord,
@@ -15,7 +14,6 @@ export interface VaultService {
 	createVault(
 		userId: string,
 		name: string,
-		initialWrapper: VaultKeyWrapperInput,
 		selectedOrganizationId?: string,
 	): Promise<VaultRecord>;
 	getVaultBootstrap(userId: string, vaultId: string): Promise<VaultBootstrapRecord>;

@@ -7,7 +7,6 @@ import type {
 	InactiveVaultCandidate,
 	VaultBootstrapRecord,
 	VaultKeyEnvelope,
-	VaultKeyWrapperInput,
 	VaultKeyWrapperRecord,
 	VaultRecord,
 } from "../../domain/types";
@@ -179,7 +178,6 @@ export class DrizzleVaultStore
 		userId: string,
 		organizationId: string,
 		name: string,
-		initialWrapper: VaultKeyWrapperInput,
 		maxVaults = 0,
 	): Promise<VaultRecord> {
 		const vaultId = crypto.randomUUID();
@@ -190,16 +188,11 @@ export class DrizzleVaultStore
 			this.db
 				.insert(schema.vault)
 				.select(
-					sql`SELECT ${vaultId}, ${organizationId}, ${name}, CASE WHEN (SELECT count(*) FROM member WHERE organization_id=${organizationId})>1 THEN ${now} ELSE null END, ${initialWrapper.envelope.keyVersion}, ${now}, null, null, null
+					sql`SELECT ${vaultId}, ${organizationId}, ${name}, CASE WHEN (SELECT count(*) FROM member WHERE organization_id=${organizationId})>1 THEN ${now} ELSE null END, 1, ${now}, null, null, null
           WHERE (${maxVaults}=0 OR (SELECT count(*) FROM vault WHERE organization_id=${organizationId} AND deleted_at IS NULL)<${maxVaults})
           AND EXISTS (SELECT 1 FROM member WHERE organization_id=${organizationId} AND user_id=${userId} AND role IN ('owner','admin'))`,
 				)
 				.returning(),
-			this.db
-				.insert(schema.vaultKeyWrapper)
-				.select(
-					sql`SELECT ${crypto.randomUUID()}, ${vaultId}, ${initialWrapper.envelope.keyVersion}, ${initialWrapper.kind}, ${userId}, ${JSON.stringify(initialWrapper.envelope)}, ${now}, null FROM vault WHERE id=${vaultId}`,
-				),
 			this.db
 				.insert(schema.vaultMembership)
 				.select(

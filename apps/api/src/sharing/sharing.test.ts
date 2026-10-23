@@ -101,9 +101,7 @@ describe("organization vault sharing", () => {
 		expect((await service.invitation(actor("alice"), invite.id)).vaults).toHaveLength(2);
 		await service.respond(actor("alice"), invite.id, true);
 		const vaultStore = new DrizzleVaultStore(db);
-		const created = await vaultStore.createVaultForUser("owner", "org", "Later", {
-			kind: "password", envelope: { ...wrapper("owner"), version: 1, binding: undefined },
-		});
+		const created = await vaultStore.createVaultForUser("owner", "org", "Later");
 		const org = await service.organization("alice", "org");
 		expect(org.vaults).toHaveLength(3);
 		expect(org.vaults.every((v) => v.canManage === (role === "admin") && v.status === "pending_key" && !v.personal && v.shared)).toBe(true);
@@ -282,10 +280,6 @@ describe("organization vault sharing", () => {
 					"owner",
 					"org",
 					`concurrent-${i}`,
-					{
-						kind: "password",
-						envelope: { ...wrapper("owner"), version: 1, binding: undefined },
-					},
 					3,
 				),
 			),

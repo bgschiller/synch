@@ -8,27 +8,6 @@ import type { VaultLifecycleStore } from "../ports/outbound/vault-lifecycle-stor
 import { VaultApplicationError } from "../errors/vault-errors";
 import { VaultApplicationService } from "./vault-service";
 
-const INITIAL_WRAPPER = {
-	kind: "password" as const,
-	envelope: {
-		version: 1,
-		keyVersion: 1,
-		kdf: {
-			name: "argon2id",
-			memoryKiB: 65_536,
-			iterations: 3,
-			parallelism: 1,
-			salt: "MDEyMzQ1Njc4OWFiY2RlZg==",
-		},
-		wrap: {
-			algorithm: "aes-256-gcm",
-			nonce: "AAECAwQFBgcICQoL",
-			ciphertext:
-				"c3luY2h2YXVsdC13cmFwcGVkLXZhdWx0LWtleS12MS10ZXN0LWNpcGhlcnRleHQh",
-		},
-	},
-};
-
 function setup(overrides: Record<string, unknown> = {}) {
 	const store = {
 		readDefaultOrganizationIdForUser: vi.fn(async () => "org-1"),
@@ -79,14 +58,13 @@ describe("VaultApplicationService", () => {
 	it("passes the vault name through to the mutation store", async () => {
 		const { service, store } = setup();
 
-		const created = await service.createVault("user-1", "Personal", INITIAL_WRAPPER);
+		const created = await service.createVault("user-1", "Personal");
 
 		expect(created.id).toBe("vault-1");
 		expect(store.createVaultForUser).toHaveBeenCalledWith(
 			"user-1",
 			"org-1",
 			"Personal",
-			INITIAL_WRAPPER,
             1,
 		);
 	});
@@ -96,7 +74,7 @@ describe("VaultApplicationService", () => {
 			readDefaultOrganizationIdForUser: vi.fn(async () => null),
 		});
 
-		await expect(service.createVault("user-1", "Personal", INITIAL_WRAPPER)).rejects.toBeInstanceOf(
+		await expect(service.createVault("user-1", "Personal")).rejects.toBeInstanceOf(
 			VaultApplicationError,
 		);
 		expect(store.createVaultForUser).not.toHaveBeenCalled();
@@ -110,7 +88,7 @@ describe("VaultApplicationService", () => {
 			getSubscriptionPlanPolicy("self_hosted"),
 		);
 
-		await expect(service.createVault("user-1", "Work", INITIAL_WRAPPER)).resolves.toMatchObject({
+		await expect(service.createVault("user-1", "Work")).resolves.toMatchObject({
 			id: "vault-1",
 		});
 		expect(store.createVaultForUser).toHaveBeenCalled();

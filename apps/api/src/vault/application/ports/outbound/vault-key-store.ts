@@ -1,6 +1,5 @@
 import type {
 	VaultKeyEnvelope,
-	VaultKeyWrapperInput,
 	VaultKeyWrapperRecord,
 	VaultRecord,
 } from "../../dto/vault-types";
@@ -10,7 +9,6 @@ export interface VaultKeyStore {
 		userId: string,
 		organizationId: string,
 		name: string,
-		initialWrapper: VaultKeyWrapperInput,
         maxVaults?: number,
 	): Promise<VaultRecord>;
 	upsertPasswordWrapperForUser(
