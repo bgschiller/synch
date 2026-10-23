@@ -44,16 +44,11 @@ describe("vault integration", () => {
 		).toBe(1);
 	});
 
-	it("returns the visible wrappers in the bootstrap response", async () => {
+	it("returns the bootstrap response without key wrappers", async () => {
 		const primary = await signUpAndCreateVault();
 
 		const bootstrap = await jsonRequest<{
 			vault: { id: string; organizationId: string; name: string; activeKeyVersion: number };
-			wrappers: Array<{
-				kind: string;
-				keyVersion: number;
-				envelope: { kdf: { name: string } };
-			}>;
 		}>(`/v1/vaults/${encodeURIComponent(primary.vaultId)}/bootstrap`, {
 			headers: {
 				cookie: primary.sessionCookie,
@@ -65,8 +60,9 @@ describe("vault integration", () => {
 		expect(bootstrap.json?.vault.organizationId).toBe(primary.organizationId);
 		expect(bootstrap.json?.vault.name).toBe(primary.vaultName);
 		expect(bootstrap.json?.vault.activeKeyVersion).toBe(1);
-		// Vaults no longer have a password, so no key wrappers are created.
-		expect(bootstrap.json?.wrappers).toHaveLength(0);
+		// Vaults no longer have a password, so the bootstrap response has no
+		// key wrappers.
+		expect(bootstrap.json).not.toHaveProperty("wrappers");
 	});
 
 	it("rejects sync token issuance for another user's vault", async () => {

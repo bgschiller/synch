@@ -11,7 +11,6 @@ import {
 	jsonRequest,
 	signUpAccount,
 	signUpAndCreateVault,
-	DEFAULT_VAULT_WRAPPER,
 	issueSyncToken,
 } from "../helpers/api";
 
@@ -27,26 +26,6 @@ async function plus(organizationId: string) {
 			Date.now() + 86400000,
 		)
 		.run();
-}
-async function receiverKey() {
-	const key = await crypto.subtle.generateKey(
-		{
-			name: "RSA-OAEP",
-			hash: "SHA-256",
-			modulusLength: 3072,
-			publicExponent: new Uint8Array([1, 0, 1]),
-		},
-		true,
-		["encrypt", "decrypt"],
-	);
-	if (!("publicKey" in key)) throw new Error("invalid key pair");
-	return btoa(
-		String.fromCharCode(
-			...new Uint8Array(
-				(await crypto.subtle.exportKey("spki", key.publicKey)) as ArrayBuffer,
-			),
-		),
-	);
 }
 const mutation = (cookie: string, body?: unknown, method = "POST") => ({
 	method,
@@ -66,22 +45,14 @@ describe("Plus organization sharing on Cloudflare", () => {
 		expect(invite.response.status).toBe(201);
 		expect((await jsonRequest(`/v1/invitations/${invite.json!.id}/accept`, mutation(admin.sessionCookie))).response.status).toBe(200);
 		const organization = await jsonRequest<{ vaults: { id: string; canManage: boolean; status: string }[] }>(`/v1/organizations/${owner.organizationId}`, { headers: { cookie: admin.sessionCookie } });
-		expect(organization.json!.vaults).toEqual([expect.objectContaining({ id: owner.vaultId, canManage: true, status: "pending_key" })]);
+		expect(organization.json!.vaults).toEqual([expect.objectContaining({ id: owner.vaultId, canManage: true, status: "active" })]);
 		const created = await jsonRequest<{ vault: { id: string } }>("/v1/vaults", mutation(admin.sessionCookie, {
-			name: "Created by admin", organizationId: owner.organizationId, initialWrapper: DEFAULT_VAULT_WRAPPER,
+			name: "Created by admin", organizationId: owner.organizationId,
 		}));
 		expect(created.response.status).toBe(201);
-		// The owner can delete a vault created by someone else before receiving its key.
+		// The owner can delete a vault created by someone else.
 		expect((await jsonRequest(`/v1/vaults/${created.json!.vault.id}`, mutation(owner.sessionCookie, undefined, "DELETE"))).response.status).toBe(202);
-		const id = crypto.randomUUID();
-		const path = `/v1/vaults/${owner.vaultId}/key-requests`;
-		expect((await jsonRequest(path, mutation(admin.sessionCookie, { id, publicKey: await receiverKey() }))).response.status).toBe(201);
-		expect((await jsonRequest(`${path}/${id}/approve`, mutation(owner.sessionCookie, {
-			envelope: { version: 1, algorithm: "rsa-oaep-sha256", ciphertext: "A".repeat(512) },
-		}))).response.status).toBe(200);
-		expect((await jsonRequest(`${path}/${id}/complete`, mutation(admin.sessionCookie, {
-			envelope: { ...DEFAULT_VAULT_WRAPPER.envelope, version: 2, binding: { vaultId: owner.vaultId, userId: admin.userId } },
-		}))).response.status).toBe(200);
+		// Auto-enrollment grants the admin access without a key ceremony.
 		const token = await issueSyncToken(admin.sessionCookie, owner.vaultId, "admin-device");
 		expect((await jsonRequest(`/v1/organizations/${owner.organizationId}/members/${admin.userId}`, mutation(owner.sessionCookie, { role: "member" }, "PATCH"))).response.status).toBe(200);
 		expect((await jsonRequest(`/v1/vaults/${owner.vaultId}/bootstrap`, { headers: { cookie: admin.sessionCookie } })).response.status).toBe(200);
@@ -157,71 +128,15 @@ describe("Plus organization sharing on Cloudflare", () => {
 				)
 			).response.status,
 		).toBe(200);
+		// Accepting auto-enrolls the member into every org vault; no key-request
+		// ceremony is required before syncing.
 		expect(
 			(
 				await jsonRequest(`/v1/vaults/${owner.vaultId}/bootstrap`, {
 					headers: { cookie: member.sessionCookie },
 				})
 			).response.status,
-		).toBe(403);
-		const requestId = crypto.randomUUID();
-		const path = `/v1/vaults/${owner.vaultId}/key-requests`;
-		const requested = await jsonRequest(
-			path,
-			mutation(member.sessionCookie, {
-				id: requestId,
-				publicKey: await receiverKey(),
-			}),
-		);
-		expect(requested.response.status).toBe(201);
-		expect(
-			(
-				await jsonRequest(
-					`${path}/${requestId}/approve`,
-					mutation(member.sessionCookie, {
-						envelope: {
-							version: 1,
-							algorithm: "rsa-oaep-sha256",
-							ciphertext: "A".repeat(512),
-						},
-					}),
-				)
-			).response.status,
-		).toBe(403);
-		expect(
-			(
-				await jsonRequest(
-					`${path}/${requestId}/approve`,
-					mutation(owner.sessionCookie, {
-						envelope: {
-							version: 1,
-							algorithm: "rsa-oaep-sha256",
-							ciphertext: "A".repeat(512),
-						},
-					}),
-				)
-			).response.status,
 		).toBe(200);
-		const envelope = {
-			...DEFAULT_VAULT_WRAPPER.envelope,
-			version: 2,
-			binding: { vaultId: owner.vaultId, userId: member.userId },
-		};
-		expect(
-			(
-				await jsonRequest(
-					`${path}/${requestId}/complete`,
-					mutation(member.sessionCookie, { envelope }),
-				)
-			).response.status,
-		).toBe(200);
-		const bootstrap = await jsonRequest<{
-			wrappers: { userId: string; envelope: unknown }[];
-		}>(`/v1/vaults/${owner.vaultId}/bootstrap`, {
-			headers: { cookie: member.sessionCookie },
-		});
-		expect(bootstrap.json?.wrappers).toHaveLength(1);
-		expect(bootstrap.json!.wrappers[0].userId).toBe(member.userId);
 		const issued = await issueSyncToken(
 			member.sessionCookie,
 			owner.vaultId,
@@ -253,7 +168,7 @@ describe("Plus organization sharing on Cloudflare", () => {
 		}
 		expect((await jsonRequest(`/v1/vaults/${owner.vaultId}/members/${member.userId}`, mutation(owner.sessionCookie, undefined, "DELETE"))).response.status).toBe(410);
 		expect((await jsonRequest(`/v1/vaults/${owner.vaultId}/bootstrap`, { headers: { cookie: member.sessionCookie } })).response.status).toBe(200);
-		expect((await jsonRequest("/v1/vaults", mutation(member.sessionCookie, { name: "Member cannot create", organizationId: owner.organizationId, initialWrapper: DEFAULT_VAULT_WRAPPER }))).response.status).toBe(403);
+		expect((await jsonRequest("/v1/vaults", mutation(member.sessionCookie, { name: "Member cannot create", organizationId: owner.organizationId }))).response.status).toBe(403);
 		const closed = new Promise<number>((resolve) =>
 			socket.addEventListener("close", (event) => resolve(event.code)),
 		);
@@ -308,23 +223,13 @@ describe("Plus organization sharing on Cloudflare", () => {
 			).response.status,
 		).toBe(403);
 
-		// Rejoining requires a new invitation, fresh key approval and a fresh token.
+		// Rejoining requires a new invitation and a fresh token.
 		const reinvited = await jsonRequest<{ id: string }>(invites, mutation(owner.sessionCookie, input));
 		expect(reinvited.response.status).toBe(201);
 		expect((await jsonRequest(`/v1/invitations/${reinvited.json!.id}/accept`, mutation(member.sessionCookie))).response.status).toBe(200);
-		const renewedRequestId = crypto.randomUUID();
-		expect((await jsonRequest(path, mutation(member.sessionCookie, {
-			id: renewedRequestId, publicKey: await receiverKey(),
-		}))).response.status).toBe(201);
-		expect((await jsonRequest(`${path}/${renewedRequestId}/approve`, mutation(owner.sessionCookie, {
-			envelope: { version: 1, algorithm: "rsa-oaep-sha256", ciphertext: "A".repeat(512) },
-		}))).response.status).toBe(200);
-		expect((await jsonRequest(`${path}/${renewedRequestId}/complete`, mutation(member.sessionCookie, {
-			envelope,
-		}))).response.status).toBe(200);
 		const membership = await env.DB.prepare("SELECT access_version FROM vault_membership WHERE vault_id=? AND user_id=?")
 			.bind(owner.vaultId, member.userId).first<{ access_version: number }>();
-		expect(membership?.access_version).toBe(3);
+		expect(membership?.access_version).toBe(2);
 		expect((await apiRequest(`/v1/vaults/${owner.vaultId}/socket`, {
 			headers: {
 				Upgrade: "websocket",

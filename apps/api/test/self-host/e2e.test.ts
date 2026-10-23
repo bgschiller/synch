@@ -1,7 +1,3 @@
-import { createPasswordWrappedRemoteVaultKey, unwrapRemoteVaultKeyWithPassword } from "../../../../packages/vault-crypto/src/crypto";
-import { SharingClient } from "../../../../packages/sync-client/src/sharing/client";
-import { SharingManager, type StoredKeyReceiver } from "../../../../packages/sync-client/src/sharing/manager";
-import type { HttpClient } from "../../../../packages/sync-client/src/http/request";
 import { serve, type ServerType } from "@hono/node-server";
 import { type ChildProcess, spawn } from "node:child_process";
 import { mkdtempSync, readdirSync, rmSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
@@ -23,26 +19,6 @@ import {
 
 const API_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const TSX_BIN = path.join(API_ROOT, "node_modules/.bin/tsx");
-
-const DEFAULT_VAULT_WRAPPER = {
-	kind: "password" as const,
-	envelope: {
-		version: 1,
-		keyVersion: 1,
-		kdf: {
-			name: "argon2id",
-			memoryKiB: 65_536,
-			iterations: 3,
-			parallelism: 1,
-			salt: "MDEyMzQ1Njc4OWFiY2RlZg==",
-		},
-		wrap: {
-			algorithm: "aes-256-gcm",
-			nonce: "AAECAwQFBgcICQoL",
-			ciphertext: "c3luY2h2YXVsdC13cmFwcGVkLXZhdWx0LWtleS12MS10ZXN0LWNpcGhlcnRleHQh",
-		},
-	},
-};
 
 const SELF_HOST_ALLOWED_EMAIL = "self-host-e2e@test.invalid";
 
@@ -211,7 +187,7 @@ async function signUpAndCreateVault(baseUrl: string) {
 			cookie: sessionCookie,
 			origin: baseUrl,
 		},
-		body: JSON.stringify({ name: uniqueId("vault"), initialWrapper: DEFAULT_VAULT_WRAPPER }),
+		body: JSON.stringify({ name: uniqueId("vault") }),
 	});
 	expect(createdVault.status).toBeLessThan(300);
 	const createdVaultJson = (await createdVault.json()) as { vault: { id: string } };
@@ -290,7 +266,7 @@ describe("self-hosted Node runtime: end-to-end sync", () => {
 		cleanup = [];
 	});
 
-    it("shares retained history through personal passwords, recovers with approval, and closes revoked sockets", async () => {
+    it("auto-enrolls invited members and closes revoked sockets", async () => {
       const { baseUrl, dataDir, runtime, server, wss } = await bootServer();
       cleanup.push(() => rmSync(dataDir, { recursive: true, force: true }));
       cleanup.push(() => runtime.dispose());
@@ -305,10 +281,8 @@ describe("self-hosted Node runtime: end-to-end sync", () => {
         const response = await fetch(`${baseUrl}${path}`, { method, headers: { cookie, origin: baseUrl, "content-type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
         return { response, json: await response.json() as Record<string, any> };
       };
-      const ownerIdentity = await request(owner.sessionCookie, "/api/auth/get-session");
       const organizationId = (await request(owner.sessionCookie, "/v1/organizations")).json.organizations[0].id as string;
-      const wrapped = await createPasswordWrappedRemoteVaultKey("owner keeps a private passphrase");
-      const created = await request(owner.sessionCookie, "/v1/vaults", "POST", { name: "Shared history", organizationId, initialWrapper: { kind: "password", envelope: wrapped.envelope } });
+      const created = await request(owner.sessionCookie, "/v1/vaults", "POST", { name: "Shared history", organizationId });
       expect(created.response.status).toBe(201);
       const vaultId = created.json.vault.id as string;
       const ownerToken = await issueSyncToken(baseUrl, owner.sessionCookie, vaultId, "owner-device");
@@ -322,40 +296,11 @@ describe("self-hosted Node runtime: end-to-end sync", () => {
       const invite = await request(owner.sessionCookie, `/v1/organizations/${organizationId}/invitations`, "POST", { email: "member@test.invalid", role: "member" });
       expect(invite.response.status).toBe(201);
       expect((await request(memberCookie, `/v1/invitations/${invite.json.id}/accept`, "POST")).response.status).toBe(200);
-      expect((await request(memberCookie, `/v1/vaults/${vaultId}/bootstrap`)).response.status).toBe(403);
-      expect((await request(memberCookie, `/v1/vaults/${owner.vaultId}/bootstrap`)).response.status).toBe(403);
-      let loseCompleteResponse = true;
-      const http = (cookie: string): HttpClient => ({ request: async input => {
-        const headers = new Headers(input.headers); headers.delete("authorization"); headers.set("cookie", cookie); headers.set("origin", baseUrl);
-        const response = await fetch(input.url, { method: input.method, headers, body: input.body });
-        const json = await response.json();
-        if (cookie === memberCookie && input.url.endsWith("/complete") && loseCompleteResponse && response.ok) { loseCompleteResponse = false; throw new Error("response lost"); }
-        return { status: response.status, json };
-      } });
-      const secrets = new Map<string, StoredKeyReceiver>();
-      const secretStore = { read: async (scope: string) => secrets.get(scope) ?? null, write: async (scope: string, value: StoredKeyReceiver | null) => { if (value) secrets.set(scope, value); else secrets.delete(scope); } };
-      const memberClient = new SharingClient(http(memberCookie), baseUrl, "cookie-auth");
-      let receiver = new SharingManager(memberClient, userId, secretStore);
-      const sender = new SharingManager(new SharingClient(http(owner.sessionCookie), baseUrl, "cookie-auth"), ownerIdentity.json.user.id, secretStore);
-      const pending = await receiver.begin(vaultId);
-      await expect(sender.approve(pending, wrapped.remoteVaultKey, "wrong-code")).rejects.toThrow("verification code");
-      await sender.approve(pending, wrapped.remoteVaultKey, await receiver.verificationCode(pending));
-      const password = "member has a separate passphrase";
-      await expect(receiver.receive(vaultId, password, password)).rejects.toThrow("response lost");
-      // Recreate the manager to model a device restart after an ambiguous response.
-      receiver = new SharingManager(memberClient, userId, secretStore);
-      await receiver.receive(vaultId, password, password);
-      expect(secrets.size).toBe(0);
-      const bootstrap = (await request(memberCookie, `/v1/vaults/${vaultId}/bootstrap`)).json;
-      expect(bootstrap.wrappers).toHaveLength(1); expect(bootstrap.wrappers[0].userId).toBe(userId);
-      expect(await unwrapRemoteVaultKeyWithPassword(password, bootstrap.wrappers[0].envelope, { vaultId, userId })).toEqual(wrapped.remoteVaultKey);
-      const recovery = await receiver.begin(vaultId); expect(recovery.purpose).toBe("recovery");
-      await sender.approve(recovery, wrapped.remoteVaultKey, await receiver.verificationCode(recovery));
-      const recoveredPassword = "a freshly recovered personal phrase";
-      await receiver.receive(vaultId, recoveredPassword, recoveredPassword);
-      await receiver.changePassword(vaultId, wrapped.remoteVaultKey, "another personally chosen phrase", "another personally chosen phrase");
-      const ownerBootstrap = (await request(owner.sessionCookie, `/v1/vaults/${vaultId}/bootstrap`)).json;
-      expect(ownerBootstrap.wrappers[0].envelope).toEqual(wrapped.envelope);
+      // Accepting an invitation auto-enrolls the member into every org vault;
+      // there is no key-request ceremony. The owner's earlier vault lives in
+      // the same org, so it is shared too (org = sharing boundary).
+      expect((await request(memberCookie, `/v1/vaults/${vaultId}/bootstrap`)).response.status).toBe(200);
+      expect((await request(memberCookie, `/v1/vaults/${owner.vaultId}/bootstrap`)).response.status).toBe(200);
       const token = await issueSyncToken(baseUrl, memberCookie, vaultId, "member-device");
       const memberSocket = await connectSocket(baseUrl, vaultId, token); cleanup.push(() => memberSocket.terminate());
       memberSocket.send(JSON.stringify({ type: "hello", requestId: "hello-member", lastKnownCursor: 0 })); await nextMessage(memberSocket, message => message.type === "hello_ack");
@@ -368,8 +313,10 @@ describe("self-hosted Node runtime: end-to-end sync", () => {
       const deniedBlob = await fetch(`${baseUrl}/v1/vaults/${vaultId}/blobs/history-1`, { headers: { authorization: `Bearer ${token}` } });
       expect(deniedBlob.status).toBe(403);
       expect((await request(memberCookie, "/v1/sync/token", "POST", { vaultId, localVaultId: "member-device" })).response.status).toBe(403);
-      expect((await request(memberCookie, `/v1/invitations/${invite.json.id}/accept`, "POST")).response.status).toBe(200);
-      expect((await request(memberCookie, `/v1/vaults/${vaultId}/bootstrap`)).response.status).toBe(403);
+      // Re-inviting restores access immediately.
+      const reinvite = await request(owner.sessionCookie, `/v1/organizations/${organizationId}/invitations`, "POST", { email: "member@test.invalid", role: "member" });
+      expect((await request(memberCookie, `/v1/invitations/${reinvite.json.id}/accept`, "POST")).response.status).toBe(200);
+      expect((await request(memberCookie, `/v1/vaults/${vaultId}/bootstrap`)).response.status).toBe(200);
       for (const page of ["organizations", "invitations"]) expect((await fetch(`${baseUrl}/${page}`)).status).toBe(200);
     }, 20000);
 
