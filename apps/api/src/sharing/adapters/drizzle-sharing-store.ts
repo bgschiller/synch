@@ -4,8 +4,6 @@ import {
 	asc,
 	desc,
 	eq,
-	exists,
-	gt,
 	inArray,
 	isNull,
 	ne,
@@ -13,10 +11,6 @@ import {
 } from "drizzle-orm";
 import type { AppDb } from "../../db/client";
 import * as s from "../../db/d1";
-import type {
-	KeyRequest,
-	PasswordEnvelope,
-} from "../application/types";
 
 export class DrizzleSharingStore implements SharingStore {
 	constructor(readonly db: AppDb) {}
@@ -29,17 +23,6 @@ export class DrizzleSharingStore implements SharingStore {
       WHERE NOT EXISTS (SELECT 1 FROM sharing_audit WHERE target_id=${invite.id} AND action='invitation_delivery' AND created_at>${now - 60000})
       AND (SELECT count(*) FROM sharing_audit WHERE organization_id=${invite.organizationId} AND action='invitation_delivery' AND created_at>${now - 3600000})<20 RETURNING id`);
 		return rows.length > 0;
-	}
-	async pruneExpiredRequests() {
-		await this.db
-			.update(s.vaultKeyRequest)
-			.set({ status: "canceled", envelopeJson: null })
-			.where(
-				and(
-					sql`${s.vaultKeyRequest.expiresAt}<=${Date.now()}`,
-					inArray(s.vaultKeyRequest.status, ["pending", "approved"]),
-				),
-			);
 	}
 	async accessVersions(vaultId: string) {
 		return this.db.select({ userId: s.vaultMembership.userId, accessVersion: s.vaultMembership.accessVersion })
@@ -256,6 +239,16 @@ export class DrizzleSharingStore implements SharingStore {
 			this.db.update(s.vault)
 				.set({ sharedAt: sql`coalesce(${s.vault.sharedAt}, ${Date.now()})` })
 				.where(and(eq(s.vault.organizationId, invite.organizationId), isNull(s.vault.deletedAt), pending)),
+			// Auto-enroll the member into every vault in the organization (vault access
+			// follows org membership; no key ceremony to complete).
+			this.db.insert(s.vaultMembership).select(sql`
+				SELECT v.id, ${userId}, 1, 0, 'active', ${Date.now()}, NULL
+				FROM vault v
+				WHERE v.organization_id=${invite.organizationId} AND v.deleted_at IS NULL AND ${pending}
+			`).onConflictDoUpdate({
+				target: [s.vaultMembership.vaultId, s.vaultMembership.userId],
+				set: { status: "active", revokedAt: null },
+			}),
 			this.db.insert(s.sharingRefresh).select(
 				this.db.select({ vaultId: s.vault.id, revision: sql<string>`${crypto.randomUUID()}`.as("revision"), createdAt: sql<number>`${Date.now()}`.as("createdAt") })
 					.from(s.vault).where(and(eq(s.vault.organizationId, invite.organizationId), isNull(s.vault.deletedAt), pending)),
@@ -269,19 +262,6 @@ export class DrizzleSharingStore implements SharingStore {
 		return (results[results.length - 1] as unknown[]).length > 0;
 	}
 
-	async ensureVaultEnrollment(vaultId: string, userId: string) {
-		// Access is inherited from the organization for every current and future vault.
-		// Persist only key setup and revocation versions; never reactivate an old key.
-		await this.db.insert(s.vaultMembership).select(sql`
-			SELECT v.id, m.user_id, 1, 0, 'pending_key', ${Date.now()}, NULL
-			FROM vault v JOIN member m ON m.organization_id=v.organization_id
-			WHERE v.id=${vaultId} AND v.deleted_at IS NULL AND m.user_id=${userId}
-		`).onConflictDoUpdate({
-			target: [s.vaultMembership.vaultId, s.vaultMembership.userId],
-			set: { status: "pending_key", revokedAt: null, accessVersion: sql`${s.vaultMembership.accessVersion}+1` },
-			setWhere: eq(s.vaultMembership.status, "revoked"),
-		});
-	}
 	async changeOrganizationRole(
 		organizationId: string,
 		userId: string,
@@ -301,10 +281,6 @@ export class DrizzleSharingStore implements SharingStore {
 			this.db.update(s.vaultMembership)
 				.set({ status: "revoked", revokedAt: new Date(now), accessVersion: sql`${s.vaultMembership.accessVersion}+1` })
 				.where(and(inArray(s.vaultMembership.vaultId, vaultIds), eq(s.vaultMembership.userId, userId), ne(s.vaultMembership.status, "revoked"))),
-			this.db.update(s.vaultKeyWrapper).set({ revokedAt: new Date(now) })
-				.where(and(inArray(s.vaultKeyWrapper.vaultId, vaultIds), eq(s.vaultKeyWrapper.userId, userId))),
-			this.db.update(s.vaultKeyRequest).set({ status: "canceled", envelopeJson: null })
-				.where(and(inArray(s.vaultKeyRequest.vaultId, vaultIds), eq(s.vaultKeyRequest.userId, userId))),
 			this.db.insert(s.sharingRefresh).select(
 				this.db.select({ vaultId: s.vault.id, revision: sql<string>`${crypto.randomUUID()}`.as("revision"), createdAt: sql<number>`${now}`.as("createdAt") })
 					.from(s.vault).where(inArray(s.vault.id, vaultIds)),
@@ -334,145 +310,5 @@ export class DrizzleSharingStore implements SharingStore {
 				target: s.sharingRefresh.vaultId,
 				set: { revision: crypto.randomUUID(), createdAt: Date.now() },
 			});
-	}
-	async keyRequests(vaultId: string) {
-		return this.db
-			.select()
-			.from(s.vaultKeyRequest)
-			.where(
-				and(
-					eq(s.vaultKeyRequest.vaultId, vaultId),
-					inArray(s.vaultKeyRequest.status, ["pending", "approved"]),
-					gt(s.vaultKeyRequest.expiresAt, Date.now()),
-				),
-			)
-			.orderBy(asc(s.vaultKeyRequest.createdAt));
-	}
-	async keyRequest(id: string) {
-		return (
-			(
-				await this.db
-					.select()
-					.from(s.vaultKeyRequest)
-					.where(eq(s.vaultKeyRequest.id, id))
-					.limit(1)
-			)[0] ?? null
-		);
-	}
-	async createKeyRequest(input: KeyRequest) {
-		await this.db.batch([
-			this.db
-				.update(s.vaultKeyRequest)
-				.set({ status: "canceled", envelopeJson: null })
-				.where(
-					and(
-						eq(s.vaultKeyRequest.vaultId, input.vaultId),
-						eq(s.vaultKeyRequest.userId, input.userId),
-						inArray(s.vaultKeyRequest.status, ["pending", "approved"]),
-					),
-				),
-			this.db.insert(s.vaultKeyRequest).values(input),
-		]);
-	}
-	async approveKeyRequest(
-		id: string,
-		approvedBy: string,
-		envelopeJson: string,
-	) {
-		return (
-			(
-				await this.db
-					.update(s.vaultKeyRequest)
-					.set({ status: "approved", approvedBy, envelopeJson })
-					.where(
-						and(
-							eq(s.vaultKeyRequest.id, id),
-							eq(s.vaultKeyRequest.status, "pending"),
-							gt(s.vaultKeyRequest.expiresAt, Date.now()),
-							sql`exists (select 1 from vault_membership a join vault v on v.id=a.vault_id join member o on o.organization_id=v.organization_id and o.user_id=a.user_id where a.vault_id=vault_key_request.vault_id and a.user_id=${approvedBy} and a.status='active' and o.role in ('owner','admin') and v.deleted_at is null)`,
-							sql`exists (select 1 from vault_membership m where m.vault_id=vault_key_request.vault_id and m.user_id=vault_key_request.user_id and m.access_version=vault_key_request.access_version and m.status in ('active','pending_key'))`,
-						),
-					)
-					.returning()
-			).length > 0
-		);
-	}
-	async passwordWrapper(vaultId: string, userId: string) {
-		return (
-			(
-				await this.db
-					.select()
-					.from(s.vaultKeyWrapper)
-					.where(
-						and(
-							eq(s.vaultKeyWrapper.vaultId, vaultId),
-							eq(s.vaultKeyWrapper.userId, userId),
-							eq(s.vaultKeyWrapper.kind, "password"),
-							isNull(s.vaultKeyWrapper.revokedAt),
-						),
-					)
-					.limit(1)
-			)[0]?.envelopeJson ?? null
-		);
-	}
-	async completeKeyRequest(request: KeyRequest, envelope: PasswordEnvelope) {
-		const current = and(
-			eq(s.vaultKeyRequest.id, request.id),
-			eq(s.vaultKeyRequest.status, "approved"),
-			gt(s.vaultKeyRequest.expiresAt, Date.now()),
-			sql`exists (select 1 from vault_membership m join member o on o.user_id=m.user_id join vault v on v.id=m.vault_id and v.organization_id=o.organization_id where m.vault_id=${request.vaultId} and m.user_id=${request.userId} and m.access_version=${request.accessVersion} and m.status in ('active','pending_key'))`,
-		);
-		const results = await this.db.batch([
-			this.db
-				.insert(s.vaultKeyWrapper)
-				.select(
-					this.db
-						.select({
-							id: sql<string>`${crypto.randomUUID()}`.as("id"),
-							vaultId: sql<string>`${request.vaultId}`.as("vaultId"),
-							keyVersion: sql<number>`${envelope.keyVersion}`.as("keyVersion"),
-							kind: sql<string>`'password'`.as("kind"),
-							userId: sql<string>`${request.userId}`.as("userId"),
-							envelopeJson:
-								sql<PasswordEnvelope>`${JSON.stringify(envelope)}`.as(
-									"envelopeJson",
-								),
-							createdAt: sql<Date>`${Date.now()}`.as("createdAt"),
-							revokedAt: sql<Date>`null`.as("revokedAt"),
-						})
-						.from(s.vaultKeyRequest)
-						.where(current),
-				)
-				.onConflictDoUpdate({
-					target: [
-						s.vaultKeyWrapper.vaultId,
-						s.vaultKeyWrapper.kind,
-						s.vaultKeyWrapper.userId,
-					],
-					set: { envelopeJson: envelope, revokedAt: null },
-				}),
-			this.db
-				.update(s.vaultMembership)
-				.set({ status: "active", revokedAt: null })
-				.where(
-					and(
-						eq(s.vaultMembership.vaultId, request.vaultId),
-						eq(s.vaultMembership.userId, request.userId),
-						eq(s.vaultMembership.accessVersion, request.accessVersion),
-						exists(
-							this.db
-								.select({ id: s.vaultKeyRequest.id })
-								.from(s.vaultKeyRequest)
-								.where(current),
-						),
-					),
-				),
-			this.db
-				.update(s.vaultKeyRequest)
-				.set({ status: "completed", envelopeJson: null })
-				.where(current)
-				.returning({ id: s.vaultKeyRequest.id }),
-		]);
-		return (results[2] as unknown[]).length > 0;
 	}
 }

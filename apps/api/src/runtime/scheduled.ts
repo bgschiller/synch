@@ -28,7 +28,6 @@ export async function runSharingRefreshSchedule(
 ): Promise<void> {
 	const sharingStore = new DrizzleSharingStore(createDb(env.DB));
 	await flushSharingRefreshes(sharingStore, new CoordinatorProxyRepository(env.SYNC_COORDINATOR));
-	await sharingStore.pruneExpiredRequests();
 }
 
 export async function runVaultRetentionSchedule(

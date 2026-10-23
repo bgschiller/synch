@@ -9,7 +9,6 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 import { organization, user } from "./auth-schema";
-import type { VaultKeyEnvelope } from "../../vault/domain/types";
 
 const sqliteEpochMsNow = sql`(cast((julianday('now') - 2440587.5)*86400000 as integer))`;
 
@@ -61,33 +60,6 @@ export const vaultMembership = sqliteTable(
 	],
 );
 
-export const vaultKeyWrapper = sqliteTable(
-	"vault_key_wrapper",
-	{
-		id: text("id").primaryKey(),
-		vaultId: text("vault_id")
-			.notNull()
-			.references(() => vault.id, { onDelete: "cascade" }),
-		keyVersion: integer("key_version").notNull(),
-		kind: text("kind").notNull(),
-		userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
-		envelopeJson: text("envelope_json", { mode: "json" }).$type<VaultKeyEnvelope>().notNull(),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sqliteEpochMsNow)
-			.notNull(),
-		revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
-	},
-	(table) => [
-		index("vault_key_wrapper_vaultId_idx").on(table.vaultId),
-		index("vault_key_wrapper_userId_idx").on(table.userId),
-		uniqueIndex("vault_key_wrapper_vault_kind_user_unique").on(
-			table.vaultId,
-			table.kind,
-			table.userId,
-		),
-	],
-);
-
 export const vaultSyncStatus = sqliteTable(
 	"vault_sync_status",
 	{
@@ -128,7 +100,6 @@ export const vaultRelations = relations(vault, ({ many, one }) => ({
 		references: [organization.id],
 	}),
 	memberships: many(vaultMembership),
-	wrappers: many(vaultKeyWrapper),
 	syncStatus: one(vaultSyncStatus, {
 		fields: [vault.id],
 		references: [vaultSyncStatus.vaultId],
@@ -142,17 +113,6 @@ export const vaultMembershipRelations = relations(vaultMembership, ({ one }) => 
 	}),
 	user: one(user, {
 		fields: [vaultMembership.userId],
-		references: [user.id],
-	}),
-}));
-
-export const vaultKeyWrapperRelations = relations(vaultKeyWrapper, ({ one }) => ({
-	vault: one(vault, {
-		fields: [vaultKeyWrapper.vaultId],
-		references: [vault.id],
-	}),
-	user: one(user, {
-		fields: [vaultKeyWrapper.userId],
 		references: [user.id],
 	}),
 }));

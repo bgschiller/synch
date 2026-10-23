@@ -1,5 +1,3 @@
-import type { KeyRequest, PasswordEnvelope } from "./types";
-
 export type SharingVault = {
 	id: string;
 	organizationId: string;
@@ -83,29 +81,12 @@ export interface SharingStore {
 		invite: InvitationRecord,
 		userId: string,
 	): Promise<boolean>;
-	ensureVaultEnrollment(vaultId: string, userId: string): Promise<void>;
 	changeOrganizationRole(
 		organizationId: string,
 		userId: string,
 		role: string,
 	): Promise<void>;
 	removeOrganizationMember(organizationId: string, userId: string): Promise<void>;
-	keyRequests(vaultId: string): Promise<KeyRequest[]>;
-	keyRequest(id: string): Promise<KeyRequest | null>;
-	createKeyRequest(request: KeyRequest): Promise<void>;
-	approveKeyRequest(
-		id: string,
-		approvedBy: string,
-		envelopeJson: string,
-	): Promise<boolean>;
-	passwordWrapper(
-		vaultId: string,
-		userId: string,
-	): Promise<PasswordEnvelope | null>;
-	completeKeyRequest(
-		request: KeyRequest,
-		envelope: PasswordEnvelope,
-	): Promise<boolean>;
 	audit(
 		organizationId: string,
 		actorId: string,
@@ -113,7 +94,6 @@ export interface SharingStore {
 		targetId: string,
 	): Promise<void>;
 	claimInvitationDelivery(invite: InvitationRecord): Promise<boolean>;
-	pruneExpiredRequests(): Promise<void>;
 	refreshes(): Promise<RefreshTask[]>;
 	accessVersions(vaultId: string): Promise<{ userId: string; accessVersion: number }[]>;
 	queueRefresh(vaultId: string): Promise<void>;

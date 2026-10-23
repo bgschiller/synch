@@ -69,8 +69,7 @@ it("preserves legacy passwords when migrating existing shared vaults", async () 
 	}
 });
 
-
-it("migrates organization access without changing existing keys or restoring revoked enrollment", async () => {
+it("auto-enrolls members and drops key ceremony tables without touching other state", async () => {
 	const client = createClient({ url: ":memory:" });
 	try {
 		const migrations = readMigrationFiles({ migrationsFolder: fileURLToPath(new URL("../../drizzle", import.meta.url).href) });
@@ -97,24 +96,37 @@ it("migrates organization access without changing existing keys or restoring rev
 		}
 		await db.insert(schema.invitation).values({ id: "pending", organizationId: "org", email: "invited@example.com", role: "member", status: "pending", expiresAt: new Date(Date.now() + 60000), inviterId: "owner" });
 		await client.execute("INSERT INTO invitation_vault(invitation_id,vault_id) VALUES ('pending','shared')");
-		const wrappersBefore = (await client.execute("SELECT * FROM vault_key_wrapper ORDER BY id")).rows;
-		const enrollmentSql = "SELECT vault_id,user_id,is_creator,status,access_version,revoked_at FROM vault_membership ORDER BY user_id";
-		const enrollmentBefore = (await client.execute(enrollmentSql)).rows;
 		for (const migration of migrations.slice(8)) {
 			for (const sql of migration.sql) await client.execute(sql);
 		}
-		expect((await client.execute("SELECT * FROM vault_key_wrapper ORDER BY id")).rows).toEqual(wrappersBefore);
-		expect((await client.execute(enrollmentSql)).rows).toEqual(enrollmentBefore);
+		// 0008 drops the legacy per-invitation vault link and explicit access flag.
 		expect((await client.execute("PRAGMA table_info(vault_membership)")).rows.map(row => row.name)).not.toContain("explicit_access");
 		expect((await client.execute("SELECT name FROM sqlite_master WHERE name='invitation_vault'")).rows).toEqual([]);
+		// 0009 drops the key ceremony tables.
+		expect((await client.execute("SELECT name FROM sqlite_master WHERE name='vault_key_wrapper'")).rows).toEqual([]);
+		expect((await client.execute("SELECT name FROM sqlite_master WHERE name='vault_key_request'")).rows).toEqual([]);
+		// 0009 auto-enrolls every current member into every org vault, reviving
+		// revoked grants for members who are still in the organization.
+		expect(
+			(await client.execute("SELECT vault_id,user_id,is_creator,status,access_version FROM vault_membership ORDER BY vault_id,user_id")).rows,
+		).toEqual([
+			{ vault_id: "personal", user_id: "owner", is_creator: 0, status: "active", access_version: 1 },
+			{ vault_id: "shared", user_id: "existing", is_creator: 0, status: "active", access_version: 1 },
+			{ vault_id: "shared", user_id: "owner", is_creator: 1, status: "active", access_version: 1 },
+			{ vault_id: "shared", user_id: "revoked", is_creator: 0, status: "active", access_version: 4 },
+			{ vault_id: "unassigned", user_id: "existing", is_creator: 0, status: "active", access_version: 1 },
+			{ vault_id: "unassigned", user_id: "owner", is_creator: 0, status: "active", access_version: 1 },
+			{ vault_id: "unassigned", user_id: "revoked", is_creator: 0, status: "active", access_version: 1 },
+		]);
 		const store = new DrizzleSharingStore(db);
 		expect((await store.vault("shared"))?.sharedAt?.getTime()).toBe(1);
 		expect((await store.vault("unassigned"))?.sharedAt).not.toBeNull();
 		expect((await store.vault("personal"))?.sharedAt).toBeNull();
-		expect((await store.refreshes()).map(task => task.vaultId)).toEqual(["unassigned"]);
+		// 0009 queues access refreshes for every vault so coordinators re-read
+		// the newly-enrolled memberships.
+		expect((await store.refreshes()).map(task => task.vaultId).sort()).toEqual(["personal", "shared", "unassigned"]);
 		const service = new SharingService(store, { readOrganizationPolicy: async () => getSubscriptionPlanPolicy("self_hosted") }, { refreshSharingAccess: async () => {} }, { baseURL: "https://example.com", requireVerifiedEmail: true });
-		expect((await service.organization("existing", "org")).vaults.map(v => [v.id, v.status])).toEqual([["shared", "active"], ["unassigned", "pending_key"]]);
-		expect((await service.organization("revoked", "org")).vaults.every(v => v.status === "pending_key")).toBe(true);
+		expect((await service.organization("existing", "org")).vaults.map(v => [v.id, v.status])).toEqual([["shared", "active"], ["unassigned", "active"]]);
 		await expect(service.organization("outsider", "org")).rejects.toMatchObject({ code: "forbidden" });
 		await service.resend("owner", "org", "pending");
 		const actor = { id: "invited", email: "invited@example.com" };

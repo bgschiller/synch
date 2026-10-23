@@ -1,13 +1,11 @@
 import { VaultApplicationError } from "../../application/errors/vault-errors";
-import { and, asc, eq, gt, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, eq, gt, isNotNull, isNull, lte, sql } from "drizzle-orm";
 
 import type { AppDb } from "../../../db/client";
 import * as schema from "../../../db/d1";
 import type {
 	InactiveVaultCandidate,
 	VaultBootstrapRecord,
-	VaultKeyEnvelope,
-	VaultKeyWrapperRecord,
 	VaultRecord,
 } from "../../domain/types";
 import type {
@@ -193,10 +191,12 @@ export class DrizzleVaultStore
           AND EXISTS (SELECT 1 FROM member WHERE organization_id=${organizationId} AND user_id=${userId} AND role IN ('owner','admin'))`,
 				)
 				.returning(),
+			// Vault access follows organization membership: enroll every member (the
+			// creator keeps is_creator=1 for the "personal" flag; others default 0).
 			this.db
 				.insert(schema.vaultMembership)
 				.select(
-					sql`SELECT ${vaultId}, ${userId}, 1, 1, 'active', ${now}, null FROM vault WHERE id=${vaultId}`,
+					sql`SELECT v.id, m.user_id, 1, CASE WHEN m.user_id=${userId} THEN 1 ELSE 0 END, 'active', ${now}, null FROM vault v JOIN member m ON m.organization_id = v.organization_id WHERE v.id = ${vaultId}`,
 				),
 		]);
 		if (!rows[0])
@@ -369,66 +369,9 @@ export class DrizzleVaultStore
 			return null;
 		}
 
-		const wrapperRows = await this.db
-			.select()
-			.from(schema.vaultKeyWrapper)
-			.where(
-				and(
-					eq(schema.vaultKeyWrapper.vaultId, vaultId),
-					isNull(schema.vaultKeyWrapper.revokedAt),
-					or(
-						eq(schema.vaultKeyWrapper.userId, userId),
-						and(
-							isNull(schema.vaultKeyWrapper.userId),
-							sql`${vault.sharedAt === null}`,
-						),
-					),
-				),
-			)
-			.orderBy(asc(schema.vaultKeyWrapper.createdAt));
-
 		return {
 			vault: toVaultRecord(vault),
-			wrappers: wrapperRows.map(toVaultKeyWrapperRecord),
 		};
-	}
-
-	async upsertPasswordWrapperForUser(
-		userId: string,
-		vaultId: string,
-		envelope: VaultKeyEnvelope,
-	): Promise<VaultKeyWrapperRecord> {
-		const authorized = sql`exists (select 1 from vault v join vault_membership m on m.vault_id=v.id join member o on o.organization_id=v.organization_id and o.user_id=m.user_id where v.id=${vaultId} and v.deleted_at is null and m.user_id=${userId} and m.status='active' and v.active_key_version=${envelope.keyVersion})`;
-		const [rows] = await this.db.batch([
-			this.db
-				.insert(schema.vaultKeyWrapper)
-				.select(
-					sql`select ${crypto.randomUUID()}, ${vaultId}, ${envelope.keyVersion}, 'password', ${userId}, ${JSON.stringify(envelope)}, ${Date.now()}, null where ${authorized}`,
-				)
-				.onConflictDoUpdate({
-					target: [
-						schema.vaultKeyWrapper.vaultId,
-						schema.vaultKeyWrapper.kind,
-						schema.vaultKeyWrapper.userId,
-					],
-					set: { envelopeJson: envelope, revokedAt: null },
-				})
-				.returning(),
-			// An older recovery must not overwrite a password that was just changed.
-			this.db
-				.update(schema.vaultKeyRequest)
-				.set({ status: "canceled", envelopeJson: null })
-				.where(
-					and(
-						eq(schema.vaultKeyRequest.vaultId, vaultId),
-						eq(schema.vaultKeyRequest.userId, userId),
-						sql`${schema.vaultKeyRequest.status} in ('pending','approved')`,
-						authorized,
-					),
-				),
-		]);
-		if (!rows[0]) throw new VaultApplicationError("forbidden");
-		return toVaultKeyWrapperRecord(rows[0]);
 	}
 
 	private async readAccessibleVaultRowForUser(
@@ -493,19 +436,4 @@ function isVaultPurgeStatus(
 		value === "failed" ||
 		value === null
 	);
-}
-
-function toVaultKeyWrapperRecord(
-	row: typeof schema.vaultKeyWrapper.$inferSelect,
-): VaultKeyWrapperRecord {
-	return {
-		id: row.id,
-		vaultId: row.vaultId,
-		keyVersion: row.keyVersion,
-		kind: row.kind as VaultKeyWrapperRecord["kind"],
-		userId: row.userId,
-		envelope: row.envelopeJson,
-		createdAt: row.createdAt,
-		revokedAt: row.revokedAt,
-	};
 }

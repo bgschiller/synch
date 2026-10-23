@@ -76,7 +76,6 @@ describe("libSQL app DB", () => {
 		await seedOrgAndUser(db);
 
 		const vaultId = crypto.randomUUID();
-		const wrapperId = crypto.randomUUID();
 		const [rows] = await db.batch([
 			db
 				.insert(schema.vault)
@@ -87,25 +86,6 @@ describe("libSQL app DB", () => {
 					activeKeyVersion: 1,
 				})
 				.returning(),
-			db.insert(schema.vaultKeyWrapper).values({
-				id: wrapperId,
-				vaultId,
-				keyVersion: 1,
-				kind: "password",
-				userId: "user-1",
-				envelopeJson: {
-					version: 1,
-					keyVersion: 1,
-					kdf: {
-						name: "argon2id",
-						memoryKiB: 65536,
-						iterations: 3,
-						parallelism: 1,
-						salt: "salt",
-					},
-					wrap: { algorithm: "aes-gcm", nonce: "nonce", ciphertext: "ciphertext" },
-				},
-			}),
 			db.insert(schema.vaultMembership).values({
 				vaultId,
 				userId: "user-1",

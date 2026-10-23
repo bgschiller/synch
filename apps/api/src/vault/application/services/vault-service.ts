@@ -5,8 +5,6 @@ import {
 } from "../../domain/policy";
 import type {
 	VaultBootstrapRecord,
-	VaultKeyEnvelope,
-	VaultKeyWrapperRecord,
 	VaultPurgeResult,
 	VaultRecord,
 } from "../dto/vault-types";
@@ -84,24 +82,6 @@ export class VaultApplicationService implements VaultService {
 		}
 
 		return bootstrap;
-	}
-
-	async replacePasswordWrapper(
-		userId: string,
-		vaultId: string,
-		envelope: VaultKeyEnvelope,
-	): Promise<VaultKeyWrapperRecord> {
-		if (!(await this.userCanAccessVault(userId, vaultId))) {
-			throw new VaultApplicationError("forbidden");
-		}
-		const vault = await this.catalogStore.readAccessibleVaultForUser(userId, vaultId);
-		if (!vault || envelope.keyVersion !== vault.activeKeyVersion || (envelope.version === 2 && (envelope.binding?.userId !== userId || envelope.binding?.vaultId !== vaultId))) throw new VaultApplicationError("forbidden");
-
-		return await this.keyStore.upsertPasswordWrapperForUser(
-			userId,
-			vaultId,
-			envelope,
-		);
 	}
 
 	async userCanAccessVault(userId: string, vaultId: string): Promise<boolean> {

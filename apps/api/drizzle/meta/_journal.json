@@ -64,6 +64,13 @@
       "when": 1790572939534,
       "tag": "0008_organization_vault_access",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1792787718719,
+      "tag": "0009_passwordless_auto_enrollment",
+      "breakpoints": true
     }
   ]
 }

@@ -1,7 +1,5 @@
 import type {
 	VaultBootstrapRecord,
-	VaultKeyEnvelope,
-	VaultKeyWrapperRecord,
 	VaultPurgeResult,
 	VaultRecord,
 } from "../../dto/vault-types";
@@ -17,11 +15,6 @@ export interface VaultService {
 		selectedOrganizationId?: string,
 	): Promise<VaultRecord>;
 	getVaultBootstrap(userId: string, vaultId: string): Promise<VaultBootstrapRecord>;
-	replacePasswordWrapper(
-		userId: string,
-		vaultId: string,
-		envelope: VaultKeyEnvelope,
-	): Promise<VaultKeyWrapperRecord>;
 	userCanAccessVault(userId: string, vaultId: string): Promise<boolean>;
 	getAccessibleVault(userId: string, vaultId: string): Promise<VaultRecord | null>;
 	userCanManageVault(userId: string, vaultId: string): Promise<boolean>;

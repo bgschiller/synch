@@ -2,12 +2,6 @@ export type {
 	InactiveVaultCandidate,
 	VaultInactivityNotice,
 	VaultBootstrapRecord,
-	VaultKeyDerivationMetadata,
-	VaultKeyEnvelope,
-	VaultKeyWrapMetadata,
-	VaultKeyWrapperInput,
-	VaultKeyWrapperKind,
-	VaultKeyWrapperRecord,
 	VaultPurgeResult,
 	VaultRecord,
 } from "./dto/vault-types";

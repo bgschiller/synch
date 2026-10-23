@@ -4,33 +4,8 @@ import {
 	sqliteTable,
 	text,
 } from "drizzle-orm/sqlite-core";
-import { organization, user } from "./auth-schema";
+import { organization } from "./auth-schema";
 import { vault } from "./vault-schema";
-
-export const vaultKeyRequest = sqliteTable(
-	"vault_key_request",
-	{
-		id: text("id").primaryKey(),
-		vaultId: text("vault_id")
-			.notNull()
-			.references(() => vault.id, { onDelete: "cascade" }),
-		userId: text("user_id")
-			.notNull()
-			.references(() => user.id, { onDelete: "cascade" }),
-		purpose: text("purpose").notNull(),
-		accessVersion: integer("access_version").notNull(),
-		publicKey: text("public_key").notNull(),
-		status: text("status").notNull(),
-		envelopeJson: text("envelope_json"),
-		approvedBy: text("approved_by").references(() => user.id),
-		createdAt: integer("created_at").notNull(),
-		expiresAt: integer("expires_at").notNull(),
-	},
-	(t) => [
-		index("vault_key_request_vault_status_idx").on(t.vaultId, t.status),
-		index("vault_key_request_user_idx").on(t.userId),
-	],
-);
 
 export const sharingAudit = sqliteTable(
 	"sharing_audit",

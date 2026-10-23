@@ -4,7 +4,6 @@ import { z } from "zod";
 import type { SessionReader } from "../../../../auth/session";
 import { createEnsureAuthenticatedSession } from "../../../../platform/http/authenticated-session";
 import type { VaultService } from "../../../application";
-import { vaultKeyEnvelopeSchema } from "../../../application/dto/vault-key-envelope";
 import { Hono } from "hono";
 
 export function registerVaultRoutes(
@@ -84,16 +83,6 @@ export function registerVaultRoutes(
 					activeKeyVersion: bootstrap.vault.activeKeyVersion,
 					createdAt: bootstrap.vault.createdAt.toISOString(),
 				},
-				wrappers: bootstrap.wrappers.map((wrapper) => ({
-					id: wrapper.id,
-					vaultId: wrapper.vaultId,
-					keyVersion: wrapper.keyVersion,
-					kind: wrapper.kind,
-					userId: wrapper.userId,
-					envelope: wrapper.envelope,
-					createdAt: wrapper.createdAt.toISOString(),
-					revokedAt: wrapper.revokedAt?.toISOString() ?? null,
-				})),
 			});
 		},
 	);
@@ -121,46 +110,6 @@ export function registerVaultRoutes(
 				},
 				202,
 			);
-		},
-	);
-
-	app.put(
-		"/v1/vaults/:vaultId/password-wrapper",
-		ensureAuthenticatedSession,
-		zValidator(
-			"param",
-			z.object({
-				vaultId: z.string().trim().min(1),
-			}),
-		),
-		zValidator(
-			"json",
-			z.object({
-				envelope: vaultKeyEnvelopeSchema,
-			}),
-		),
-		async (c) => {
-			const user = c.var.user;
-			const { vaultId } = c.req.valid("param");
-			const body = c.req.valid("json");
-			const wrapper = await deps.vaultService.replacePasswordWrapper(
-				user.id,
-				vaultId,
-				body.envelope,
-			);
-
-			return c.json({
-				wrapper: {
-					id: wrapper.id,
-					vaultId: wrapper.vaultId,
-					keyVersion: wrapper.keyVersion,
-					kind: wrapper.kind,
-					userId: wrapper.userId,
-					envelope: wrapper.envelope,
-					createdAt: wrapper.createdAt.toISOString(),
-					revokedAt: wrapper.revokedAt?.toISOString() ?? null,
-				},
-			});
 		},
 	);
 
