@@ -34,6 +34,21 @@ const mutation = (cookie: string, body?: unknown, method = "POST") => ({
 });
 
 describe("Plus organization sharing on Cloudflare", () => {
+	it("lets a user create additional organizations", async () => {
+		const owner = await signUpAndCreateVault();
+		const created = await jsonRequest<{ organization: { id: string; name: string; role: string } }>(
+			"/v1/organizations",
+			mutation(owner.sessionCookie, { name: "Household" }),
+		);
+		expect(created.response.status).toBe(201);
+		expect(created.json!.organization).toEqual(expect.objectContaining({ name: "Household", role: "owner" }));
+		const list = await jsonRequest<{ organizations: { id: string; name: string }[] }>(
+			"/v1/organizations",
+			{ headers: { cookie: owner.sessionCookie } },
+		);
+		expect(list.json!.organizations).toHaveLength(2);
+		expect(list.json!.organizations.map((org) => org.name)).toEqual(expect.arrayContaining(["Household"]));
+	});
 	it("uses organization roles for all vault management and preserves content access on demotion", async () => {
 		const owner = await signUpAndCreateVault();
 		const admin = await signUpAccount();

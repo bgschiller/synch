@@ -60,6 +60,10 @@ export interface SharingStore {
 		organizationId: string,
 	): Promise<{ id: string; name: string } | null>;
 	rename(organizationId: string, name: string): Promise<void>;
+	createOrganization(
+		userId: string,
+		name: string,
+	): Promise<{ id: string; name: string; role: string }>;
 	vault(vaultId: string): Promise<SharingVault | null>;
 	vaults(organizationId: string): Promise<SharingVault[]>;
 	grant(vaultId: string, userId: string): Promise<SharingMembership | null>;

@@ -12,12 +12,7 @@ import {
 	parseAllowedEmails,
 	SIGN_UP_EMAIL_NOT_ALLOWED,
 } from "./policies/allowed-emails";
-import { defaultOrganizationSlug } from "./policies/organization";
-
-// Cap the number of vault-scoped organizations a user may create (work, personal,
-// household, etc.). Better Auth's organization plugin requires a concrete limit;
-// use a generously high value instead of a sentinel.
-const MAX_ORGANIZATIONS_PER_USER = 100;
+import { defaultOrganizationSlug, MAX_ORGANIZATIONS_PER_USER } from "./policies/organization";
 
 export type OutgoingEmail = {
 	from: string;

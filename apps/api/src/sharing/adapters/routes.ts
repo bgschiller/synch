@@ -53,6 +53,23 @@ export function registerSharingRoutes(
 	api.get("/organizations", async (c) =>
 		c.json({ organizations: await service.listOrganizations(c.var.user.id) }),
 	);
+	api.post(
+		"/organizations",
+		zValidator(
+			"json",
+			z.object({ name: z.string().trim().min(1).max(100) }).strict(),
+		),
+		async (c) =>
+			c.json(
+				{
+					organization: await service.createOrganization(
+						c.var.user.id,
+						c.req.valid("json").name,
+					),
+				},
+				201,
+			),
+	);
 	api.get("/organizations/:orgId", async (c) =>
 		c.json(await service.organization(c.var.user.id, c.req.param("orgId"))),
 	);

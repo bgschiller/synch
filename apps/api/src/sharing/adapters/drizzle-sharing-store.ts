@@ -96,6 +96,22 @@ export class DrizzleSharingStore implements SharingStore {
 			.set({ name })
 			.where(eq(s.organization.id, organizationId));
 	}
+	async createOrganization(userId: string, name: string) {
+		const id = crypto.randomUUID();
+		const now = new Date();
+		const slug = `${name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40)}-${id.slice(0, 8)}`;
+		await this.db.batch([
+			this.db.insert(s.organization).values({ id, name, slug, createdAt: now }),
+			this.db.insert(s.member).values({
+				id: crypto.randomUUID(),
+				organizationId: id,
+				userId,
+				role: "owner",
+				createdAt: now,
+			}),
+		]);
+		return { id, name, role: "owner" };
+	}
 	async vault(vaultId: string) {
 		return (
 			(

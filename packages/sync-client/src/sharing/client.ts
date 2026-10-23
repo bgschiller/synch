@@ -75,13 +75,39 @@ export class SharingClient {
       ),
     );
   }
-  private async request<T>(path: string): Promise<T> {
+  async createOrganization(name: string): Promise<SharingOrganizationSummary> {
+    return (
+      await this.request<{ organization: SharingOrganizationSummary }>(
+        "/v1/organizations",
+        { method: "POST", body: { name } },
+      )
+    ).organization;
+  }
+  async inviteMember(
+    organizationId: string,
+    email: string,
+    role: "admin" | "member" = "member",
+  ): Promise<void> {
+    await this.request(
+      `/v1/organizations/${encodeURIComponent(organizationId)}/invitations`,
+      { method: "POST", body: { email, role } },
+    );
+  }
+  private async request<T>(
+    path: string,
+    options: { method?: string; body?: unknown } = {},
+  ): Promise<T> {
     const response = await this.http.request({
       url: `${this.apiBaseUrl}${path}`,
-      method: "GET",
+      method: options.method ?? "GET",
       headers: {
         authorization: `Bearer ${this.token}`,
+        ...(options.body !== undefined
+          ? { "content-type": "application/json" }
+          : {}),
       },
+      body:
+        options.body !== undefined ? JSON.stringify(options.body) : undefined,
     });
     if (response.status < 200 || response.status >= 300)
       throw createApiRequestError(response, "Sharing request failed");

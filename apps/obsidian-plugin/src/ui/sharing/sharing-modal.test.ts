@@ -64,3 +64,13 @@ it("explains an empty organization list", async () => {
   await tick();
   expect(getCreatedElementTexts()).toContain(t("sharing.noVaults"));
 });
+
+it("offers to create and manage organizations", async () => {
+  const { organization, modal } = setup();
+  (organization as unknown as { role: string }).role = "owner";
+  modal.open();
+  await tick();
+  const texts = getButtonComponents().map(button => button.text);
+  expect(texts).toContain(t("sharing.newOrganization"));
+  expect(texts).toContain(t("sharing.inviteMember"));
+});

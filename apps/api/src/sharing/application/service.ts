@@ -1,5 +1,6 @@
 import { vaultEnrollmentStatus } from "../../vault/domain/policy";
 import type { EmailSender } from "../../auth/better-auth";
+import { MAX_ORGANIZATIONS_PER_USER } from "../../auth/policies/organization";
 import type { SubscriptionPolicyReader } from "../../subscription/application";
 import { organizationSharingPolicy } from "../../subscription/domain/policy";
 import type { SharingStore } from "./store";
@@ -34,6 +35,23 @@ export class SharingService {
 				plan: await this.policy.readOrganizationPolicy(org.id),
 			})),
 		);
+	}
+	async createOrganization(userId: string, name: string) {
+		const trimmed = name.trim();
+		if (!trimmed)
+			throw new SharingError(
+				400,
+				"invalid_name",
+				"Organization name is required",
+			);
+		const organizations = await this.store.organizations(userId);
+		if (organizations.length >= MAX_ORGANIZATIONS_PER_USER)
+			throw new SharingError(
+				403,
+				"organization_limit_exceeded",
+				"You've reached the maximum number of organizations",
+			);
+		return this.store.createOrganization(userId, trimmed);
 	}
 	async requireOrganization(
 		userId: string,

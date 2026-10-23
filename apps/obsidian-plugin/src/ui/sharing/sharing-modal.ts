@@ -6,6 +6,48 @@ import {
 } from "@synch/sync-client/remote";
 import { t } from "../../i18n";
 import { showButtonLoading } from "../button-loading";
+import { submitOnEnter } from "../keyboard";
+
+class TextPromptModal extends Modal {
+  private resolver: ((value: string | null) => void) | null = null;
+  private value: string | null = null;
+  constructor(
+    app: App,
+    private readonly title: string,
+    private readonly placeholder: string,
+    private readonly submitLabel: string,
+  ) {
+    super(app);
+  }
+  openAndWait(): Promise<string | null> {
+    return new Promise((resolve) => {
+      this.resolver = resolve;
+      this.open();
+    });
+  }
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl("h3", { text: this.title });
+    let value = "";
+    new Setting(contentEl).addText((text) => {
+      text.setPlaceholder(this.placeholder).onChange((v) => { value = v.trim(); });
+      submitOnEnter(text.inputEl, () => this.submit(value));
+    });
+    new Setting(contentEl).addButton((button) => {
+      button.setButtonText(this.submitLabel).setCta().onClick(() => this.submit(value));
+    });
+  }
+  private submit(value: string): void {
+    this.value = value || null;
+    this.close();
+  }
+  onClose(): void {
+    const resolver = this.resolver;
+    this.resolver = null;
+    if (resolver) resolver(this.value);
+  }
+}
 
 export class SharingModal extends Modal {
   private closed = false;
@@ -69,6 +111,12 @@ export class SharingModal extends Modal {
       button.buttonEl.addClass("synch-sharing-web-link");
       setIcon(button.buttonEl.createSpan(), "arrow-up-right");
     });
+    new Setting(footer).addButton((button) => {
+      button.setButtonText(t("sharing.newOrganization")).setDisabled(this.busy).onClick(() => {
+        void this.run(() => this.createOrganization(), button);
+      });
+      this.controls.push(button);
+    });
     let stopLoading: (() => void) | undefined;
     new Setting(footer).addButton((button) => {
       button.setButtonText(t("sharing.refresh")).setDisabled(this.busy).onClick(() => {
@@ -83,6 +131,17 @@ export class SharingModal extends Modal {
       loading.remove();
       let vaultCount = 0;
       for (const organization of organizations) {
+        const section = body.createDiv({ cls: "synch-sharing-org" });
+        const header = section.createDiv({ cls: "synch-sharing-org-header" });
+        header.createEl("h3", { text: organization.name });
+        if (organization.role === "owner" || organization.role === "admin") {
+          new Setting(header).addButton((button) => {
+            button.setButtonText(t("sharing.inviteMember")).setDisabled(this.busy).onClick(() => {
+              void this.run(() => this.inviteMember(organization), button);
+            });
+            this.controls.push(button);
+          });
+        }
         const vaults = organization.vaults.filter(
           (vault) =>
             vault.status === "active" || vault.status === "pending_key",
@@ -91,16 +150,17 @@ export class SharingModal extends Modal {
         vaultCount += vaults.length;
         for (const vault of vaults) {
           try {
-            this.renderVault(body, vault, organization.sharing.enabled, organization.name);
+            this.renderVault(section, vault, organization.sharing.enabled, organization.name);
             if (this.closed) return;
           } catch (error) {
-            body.createEl("p", {
+            section.createEl("p", {
               text: error instanceof Error ? error.message : String(error),
             });
           }
         }
       }
-      if (!vaultCount) body.createEl("p", { text: t("sharing.noVaults"), cls: "synch-sharing-empty" });
+      if (!vaultCount && !organizations.length)
+        body.createEl("p", { text: t("sharing.noVaults"), cls: "synch-sharing-empty" });
     } catch (error) {
       if (this.closed) return;
       loading.remove();
@@ -110,6 +170,28 @@ export class SharingModal extends Modal {
     } finally {
       stopLoading?.();
     }
+  }
+  private async createOrganization(): Promise<void> {
+    const name = await new TextPromptModal(
+      this.app,
+      t("sharing.newOrganization"),
+      t("sharing.organizationNamePlaceholder"),
+      t("sharing.create"),
+    ).openAndWait();
+    if (!name) return;
+    const created = await this.manager.client.createOrganization(name);
+    new Notice(t("sharing.created", { name: created.name }));
+  }
+  private async inviteMember(organization: { id: string; name: string }): Promise<void> {
+    const email = await new TextPromptModal(
+      this.app,
+      `${t("sharing.inviteMember")} — ${organization.name}`,
+      t("sharing.memberEmailPlaceholder"),
+      t("sharing.invite"),
+    ).openAndWait();
+    if (!email) return;
+    await this.manager.client.inviteMember(organization.id, email, "member");
+    new Notice(t("sharing.invited", { email }));
   }
   private renderVault(
     parent: HTMLElement,

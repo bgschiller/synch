@@ -32,3 +32,27 @@ describe("organization API discovery", () => {
     await expect(client.organizations()).rejects.toThrow("offline");
   });
 });
+
+describe("organization management mutations", () => {
+  it("creates an organization with a POST body", async () => {
+    const { client, request } = setup([{ status: 201, json: { organization: { id: "org", name: "Household", role: "owner" } } }]);
+    await expect(client.createOrganization("Household")).resolves.toEqual({ id: "org", name: "Household", role: "owner" });
+    expect(request).toHaveBeenCalledWith({
+      url: "https://server.example/v1/organizations",
+      method: "POST",
+      headers: { authorization: "Bearer token", "content-type": "application/json" },
+      body: JSON.stringify({ name: "Household" }),
+    });
+  });
+
+  it("invites a member by email", async () => {
+    const { client, request } = setup([{ status: 201, json: { ok: true } }]);
+    await client.inviteMember("org-1", "a@b.example", "admin");
+    expect(request).toHaveBeenCalledWith({
+      url: "https://server.example/v1/organizations/org-1/invitations",
+      method: "POST",
+      headers: { authorization: "Bearer token", "content-type": "application/json" },
+      body: JSON.stringify({ email: "a@b.example", role: "admin" }),
+    });
+  });
+});
