@@ -48,8 +48,11 @@ class PresenceCaretWidget extends WidgetType {
   toDOM(): HTMLElement {
     const caret = createWidgetSpan("synch-presence-caret");
     caret.style.borderLeftColor = this.color;
+    caret.setAttribute("contenteditable", "false");
     const tag = createWidgetSpan("synch-presence-caret-label");
-    tag.textContent = this.label;
+    // Mobile editing can absorb widget text nodes into the document. Keep the
+    // name out of DOM text and render it as CSS-generated content instead.
+    tag.setAttribute("data-label", this.label);
     tag.style.backgroundColor = this.color;
     caret.appendChild(tag);
     return caret;
