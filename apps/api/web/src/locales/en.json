@@ -203,7 +203,6 @@
     "admin": "Administrator",
     "member": "Member",
     "active": "Active",
-    "pending_key": "Awaiting key setup",
     "revoked": "Revoked",
     "pending": "Pending",
     "expired": "Expired",
@@ -220,7 +219,6 @@
     "noVaults": "No vaults available. Create a vault from Remote vaults.",
     "sharingRequired": "Organization sharing is available with Plus or on self-hosted servers.",
     "suspended": "Shared sync is paused. Data is preserved and access resumes when Plus is renewed.",
-    "keyHelp": "Complete key setup in Obsidian.",
     "plusLimits": "Plus: 3 members including the owner · 3 vaults · 5 GB per vault · 100 MB per file · 1 year of history",
     "cancel": "Cancel invitation",
     "resend": "Resend",
@@ -246,7 +244,6 @@
     "missing": "Open the invitation link provided by your administrator.",
     "accept": "Accept invitation",
     "reject": "Reject invitation",
-    "next": "Invitation accepted. Continue key setup in Obsidian.",
     "organizations": "Manage organization"
   }
 }

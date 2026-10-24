@@ -144,7 +144,7 @@ export class SharingModal extends Modal {
         }
         const vaults = organization.vaults.filter(
           (vault) =>
-            vault.status === "active" || vault.status === "pending_key",
+            vault.status === "active",
         );
         if (!vaults.length) continue;
         vaultCount += vaults.length;
@@ -207,7 +207,7 @@ export class SharingModal extends Modal {
     heading.createEl("p", { text: organizationName, cls: "synch-sharing-hint" });
     const isActiveVault = this.activeSession()?.summary.vaultId === vault.id;
     header.createSpan({
-      text: t(vault.status === "pending_key" ? "sharing.accessNeeded" : isActiveVault ? "sharing.connected" : "sharing.notConnected"),
+      text: t(isActiveVault ? "sharing.connected" : "sharing.notConnected"),
       cls: "synch-sharing-badge",
     });
     const access = section.createDiv({ cls: "synch-sharing-panel" });

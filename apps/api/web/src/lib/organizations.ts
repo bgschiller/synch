@@ -1,5 +1,5 @@
 export type Role = "owner" | "admin" | "member";
-export type AccessStatus = "active" | "pending_key" | "revoked";
+export type AccessStatus = "active" | "revoked";
 export type InvitationStatus =
   | "pending"
   | "expired"

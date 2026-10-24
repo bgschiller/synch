@@ -101,7 +101,6 @@ describe("organization vault sharing", () => {
 		expect(await access.require("alice", "vault-a")).toBe(1);
 		await service.changeMember("owner", "org", "alice", "member");
 		expect(await access.require("alice", "vault-a")).toBe(1);
-		await expect(service.requireVault("alice", "vault-a", true)).rejects.toMatchObject({ code: "forbidden" });
 		await expect(service.invite(actor("alice"), "org", { email: actor("carol").email, role: "member" })).rejects.toMatchObject({ code: "forbidden" });
 		await service.changeMember("owner", "org", "alice", "admin");
 		expect(await access.require("alice", "vault-a")).toBe(1);
@@ -120,7 +119,7 @@ describe("organization vault sharing", () => {
 	});
 
 	it("rejects privilege escalation, wrong recipients, foreign vaults and expired invitations", async () => {
-		const { service, db, store, setPlan } = await setup();
+		const { service, db, store, access, setPlan } = await setup();
 		await db.insert(s.member).values({
 			id: "alice-org",
 			organizationId: "org",
@@ -176,7 +175,7 @@ describe("organization vault sharing", () => {
 				isCreator: true,
 				status: "active",
 			});
-		await expect(service.requireVault("alice", "foreign-vault")).rejects.toMatchObject({ code: "forbidden" });
+		await expect(access.require("alice", "foreign-vault")).rejects.toMatchObject({ code: "vault_access_denied" });
 		const invite = await service.invite(actor("owner"), "org", {
 			email: actor("bob").email,
 			role: "member",

@@ -70,7 +70,7 @@ export function InvitationsPage({ t, locale }: PageProps<"invitations">) {
         organizationId: result.organizationId ?? invitation.organizationId,
         status: action === "accept" ? "accepted" : "rejected",
       });
-      setStatus({ message: t(action === "accept" ? "next" : "rejected") });
+      setStatus({ message: t(action === "accept" ? "accepted" : "rejected") });
     } catch (error) {
       setStatus({ message: errorMessage(error, t("failed")), tone: "error" });
     } finally {

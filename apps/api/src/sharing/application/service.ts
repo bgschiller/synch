@@ -62,25 +62,6 @@ export class SharingService {
 		if (!member || (manage && !isManager(member.role))) forbidden();
 		return member;
 	}
-	async requireVault(
-		userId: string,
-		vaultId: string,
-		manage = false,
-		pending = false,
-	) {
-		const vault = await this.store.vault(vaultId);
-		if (!vault) throw new SharingError(404, "not_found", "Vault not found");
-		const member = await this.requireOrganization(userId, vault.organizationId, manage);
-		const storedGrant = await this.store.grant(vaultId, userId);
-		const grant = {
-			userId,
-			isCreator: storedGrant?.isCreator ?? false,
-			status: vaultEnrollmentStatus(storedGrant),
-			accessVersion: storedGrant?.accessVersion ?? 0,
-		};
-		if (grant.status !== "active" && !(pending && grant.status === "pending_key")) forbidden();
-		return { vault, grant, member };
-	}
 	async requireSharing(organizationId: string) {
 		const plan = await this.policy.readOrganizationPolicy(organizationId);
 		const sharing = organizationSharingPolicy(plan.id);

@@ -130,10 +130,10 @@ describe("vault connection safety", () => {
     expect(deps.bootstrap).not.toHaveBeenCalled();
   });
 
-  it("excludes pending_key, revoked, and unassigned vaults", async () => {
+  it("excludes revoked and unassigned vaults", async () => {
     const { flow, organization, vault } = setup();
-    vault.status = "pending_key";
-    organization.vaults.push({ ...vault, id: "revoked", status: "revoked" }, { ...vault, id: "unassigned", status: null });
+    vault.status = "revoked";
+    organization.vaults.push({ ...vault, id: "unassigned", status: null });
     expect(await flow.list()).toEqual([]);
   });
 

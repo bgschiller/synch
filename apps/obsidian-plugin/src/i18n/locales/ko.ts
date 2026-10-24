@@ -21,7 +21,6 @@ export const ko = {
     "sharing.connectToSetUp": "vault 연결에서 암호화 키 승인을 요청하고 비밀번호를 설정하세요.",
     "sharing.loading": "Vault 불러오는 중…",
     "sharing.noVaults": "표시할 vault가 없습니다. 브라우저에서 조직 초대를 수락한 뒤 새로고침하세요.",
-    "sharing.accessNeeded": "키 승인 필요",
     "sharing.connected": "이 기기에 연결됨",
     "sharing.notConnected": "이 기기에 연결되지 않음",
     "sharing.unavailable": "이 vault에서는 공유를 사용할 수 없습니다.",

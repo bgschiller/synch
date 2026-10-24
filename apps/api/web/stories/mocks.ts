@@ -63,7 +63,7 @@ export const organization: Organization = {
       status: "active",
       members: [
         { userId: "owner", email: "alex@example.com", status: "active" },
-        { userId: "member", email: "jamie@example.com", status: "pending_key" },
+        { userId: "member", email: "jamie@example.com", status: "active" },
       ],
     },
   ],

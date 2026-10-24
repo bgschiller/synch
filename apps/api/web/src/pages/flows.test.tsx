@@ -427,9 +427,7 @@ describe("organization management", () => {
     await userEvent.click(
       await screen.findByRole("button", { name: "Accept invitation" }),
     );
-    await screen.findByText(
-      "Invitation accepted. Continue key setup in Obsidian.",
-    );
+    await screen.findByText("Accepted");
     expect(
       screen
         .getByRole("link", { name: "Manage organization" })

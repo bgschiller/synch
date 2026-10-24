@@ -14,7 +14,7 @@ const inlineError = (message: string) => getCreatedElements().some((element) =>
   element.classes.includes("synch-modal-error") && element.text === message,
 );
 
-function setup(status: "active" | "pending_key" = "active") {
+function setup(status: "active" | "revoked" = "active") {
   const item: ConnectableVault = {
     vault: { id: "vault", name: "Team notes", personal: false, canManage: false, status, shared: true, members: [] },
     organizationName: "Team", sharingEnabled: true,
@@ -128,7 +128,7 @@ describe("connect vault onboarding", () => {
   });
 
   it("shows an empty-vault explanation without password or approval controls when blocked", async () => {
-    const { open, flow } = setup("pending_key");
+    const { open, flow } = setup("revoked");
     flow.blockingReason.mockResolvedValue(t("vault.invitedNeedsEmpty"));
     void open();
     await tick();

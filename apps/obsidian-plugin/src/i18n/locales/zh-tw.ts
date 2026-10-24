@@ -27,7 +27,6 @@ export const zhTw = {
     "sharing.connectToSetUp": "使用連線 vault 申請加密金鑰核准並設定密碼。",
     "sharing.loading": "正在載入 Vault…",
     "sharing.noVaults": "沒有可用的 Vault。請在瀏覽器中接受組織邀請，然後重新整理。",
-    "sharing.accessNeeded": "需要金鑰核准",
     "sharing.connected": "已在此裝置上連線",
     "sharing.notConnected": "未在此裝置上連線",
     "sharing.unavailable": "此 Vault 不支援共享。",

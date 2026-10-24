@@ -27,7 +27,6 @@ export const de = {
     "sharing.connectToSetUp": "Beantrage unter Vault verbinden die Schlüsselfreigabe und richte dein Passwort ein.",
     "sharing.loading": "Vaults werden geladen…",
     "sharing.noVaults": "Keine Vaults verfügbar. Nimm eine Organisationseinladung im Browser an und aktualisiere die Ansicht.",
-    "sharing.accessNeeded": "Schlüsselfreigabe erforderlich",
     "sharing.connected": "Auf diesem Gerät verbunden",
     "sharing.notConnected": "Auf diesem Gerät nicht verbunden",
     "sharing.unavailable": "Freigabe ist für diesen Vault nicht verfügbar.",

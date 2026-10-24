@@ -39,16 +39,6 @@ it("leaves password setup to Connect vault", async () => {
   expect(getButtonComponents().map(button => button.text)).not.toContain(t("sharing.save"));
 });
 
-it("marks pending access without request controls", async () => {
-  const { organization, modal } = setup();
-  organization.vaults[0]!.status = "pending_key";
-  modal.open();
-  await tick();
-  expect(getCreatedElementTexts()).toContain(t("sharing.accessNeeded"));
-  expect(getTextComponents()).toHaveLength(0);
-  expect(getButtonComponents().map(button => button.text)).not.toContain(t("sharing.request"));
-});
-
 it("explains unavailable sharing", async () => {
   const { organization, modal } = setup();
   organization.sharing.enabled = false;

@@ -203,7 +203,6 @@
     "admin": "管理員",
     "member": "成員",
     "active": "已啟用",
-    "pending_key": "等待金鑰設定",
     "revoked": "已撤銷",
     "pending": "待接受",
     "expired": "已過期",
@@ -219,7 +218,6 @@
     "noOrganizations": "沒有組織。",
     "noVaults": "尚無 vault。請在遠端 vault 頁面建立。",
     "suspended": "共享同步已暫停。資料會保留，續訂 Plus 後將恢復存取。",
-    "keyHelp": "請在 Obsidian 中完成金鑰設定。",
     "plusLimits": "Plus：含擁有者共 3 人 · 3 個 Vault · 每個 Vault 5 GB · 每個檔案 100 MB · 1 年歷史紀錄",
     "cancel": "取消邀請",
     "resend": "重新傳送",
@@ -244,7 +242,6 @@
     "missing": "請開啟管理員提供的邀請連結。",
     "accept": "接受邀請",
     "reject": "拒絕邀請",
-    "next": "邀請已接受。請在 Obsidian 中繼續設定金鑰。",
     "organizations": "管理組織",
     "switchAccount": "切換帳號",
     "wrongAccount": "此帳號無法查看邀請。請使用收到邀請的信箱登入。"

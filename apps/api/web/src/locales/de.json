@@ -203,7 +203,6 @@
     "admin": "Administrator",
     "member": "Mitglied",
     "active": "Aktiv",
-    "pending_key": "Wartet auf Schlüsseleinrichtung",
     "revoked": "Entzogen",
     "pending": "Ausstehend",
     "expired": "Abgelaufen",
@@ -219,7 +218,6 @@
     "noOrganizations": "Keine Organisationen gefunden.",
     "noVaults": "Keine Vaults vorhanden. Erstelle einen unter Remote-Vaults.",
     "suspended": "Gemeinsame Synchronisierung pausiert. Die Daten bleiben erhalten. Nach Erneuerung von Plus wird der Zugriff fortgesetzt.",
-    "keyHelp": "Schließe die Schlüsseleinrichtung in Obsidian ab.",
     "plusLimits": "Plus: 3 Mitglieder einschließlich Eigentümer · 3 Vaults · 5 GB pro Vault · 100 MB pro Datei · 1 Jahr Versionsverlauf",
     "cancel": "Einladung abbrechen",
     "resend": "Erneut senden",
@@ -244,7 +242,6 @@
     "missing": "Öffne den Einladungslink deines Administrators.",
     "accept": "Einladung annehmen",
     "reject": "Einladung ablehnen",
-    "next": "Einladung angenommen. Setze die Schlüsseleinrichtung in Obsidian fort.",
     "organizations": "Organisation verwalten",
     "switchAccount": "Konto wechseln",
     "wrongAccount": "Diese Einladung ist für dieses Konto nicht verfügbar. Melde dich mit der eingeladenen E-Mail-Adresse an."

@@ -229,7 +229,7 @@ export function VaultsPage({ t, locale }: PageProps<"vaults">) {
                         <h3 className="vault-name">{vault.name}</h3>
                         <p className="vault-meta">{createdDate(vault)}</p>
                         {vault.deletionStatus && (
-                          <p className={`vault-deletion-status access-status ${vault.deletionStatus === "failed" ? "access-status--revoked" : "access-status--pending_key"}`}>
+                          <p className={`vault-deletion-status access-status ${vault.deletionStatus === "failed" ? "access-status--revoked" : "access-status--pending"}`}>
                             {t("deletionStatus", { status: vault.deletionStatus })}
                           </p>
                         )}

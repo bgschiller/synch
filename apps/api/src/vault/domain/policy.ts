@@ -26,9 +26,9 @@ export function canManageVault(facts: VaultAuthorizationFacts): boolean {
 	);
 }
 
-/** Organization membership grants eligibility; only key enrollment enables sync. */
+/** Organization membership grants eligibility; any non-active grant is ineligible. */
 export function vaultEnrollmentStatus(membership: { status: string } | null | undefined): string {
-	return !membership || membership.status === "revoked" ? "pending_key" : membership.status;
+	return membership?.status === "active" ? "active" : "revoked";
 }
 
 /** Free remote vaults are deleted after 90 days without a synced change. */

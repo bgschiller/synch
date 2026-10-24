@@ -203,7 +203,6 @@
     "admin": "管理员",
     "member": "成员",
     "active": "已启用",
-    "pending_key": "等待密钥设置",
     "revoked": "已撤销",
     "pending": "待接受",
     "expired": "已过期",
@@ -219,7 +218,6 @@
     "noOrganizations": "没有组织。",
     "noVaults": "暂无 vault。请在远程 vault 页面创建。",
     "suspended": "共享同步已暂停。数据会保留，续订 Plus 后将恢复访问。",
-    "keyHelp": "请在 Obsidian 中完成密钥设置。",
     "plusLimits": "Plus：含所有者共 3 人 · 3 个 Vault · 每个 Vault 5 GB · 每个文件 100 MB · 1 年历史记录",
     "cancel": "取消邀请",
     "resend": "重新发送",
@@ -244,7 +242,6 @@
     "missing": "请打开管理员提供的邀请链接。",
     "accept": "接受邀请",
     "reject": "拒绝邀请",
-    "next": "邀请已接受。请在 Obsidian 中继续设置密钥。",
     "organizations": "管理组织",
     "switchAccount": "切换账号",
     "wrongAccount": "此账号无法查看邀请。请使用收到邀请的邮箱登录。"

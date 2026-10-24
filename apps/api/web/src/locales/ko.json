@@ -203,7 +203,6 @@
     "admin": "관리자",
     "member": "멤버",
     "active": "활성",
-    "pending_key": "키 설정 대기",
     "revoked": "회수됨",
     "pending": "수락 대기",
     "expired": "만료됨",
@@ -219,7 +218,6 @@
     "noOrganizations": "조직이 없습니다.",
     "noVaults": "vault가 없습니다. 원격 vault 화면에서 생성하세요.",
     "suspended": "공유 동기화가 중지되었습니다. 데이터는 보존되며 Plus를 재구독하면 접근이 재개됩니다.",
-    "keyHelp": "키 설정은 Obsidian에서 진행하세요.",
     "plusLimits": "Plus: 소유자 포함 3명 · Vault 3개 · Vault별 5 GB · 파일당 100 MB · 이력 1년",
     "cancel": "초대 취소",
     "resend": "재전송",
@@ -244,7 +242,6 @@
     "missing": "관리자가 제공한 초대 링크를 열어주세요.",
     "accept": "초대 수락",
     "reject": "초대 거절",
-    "next": "초대를 수락했습니다. Obsidian에서 키 설정을 계속하세요.",
     "organizations": "조직 관리",
     "switchAccount": "계정 전환",
     "wrongAccount": "이 계정에서는 초대를 열 수 없습니다. 초대를 받은 이메일 주소로 로그인하세요."

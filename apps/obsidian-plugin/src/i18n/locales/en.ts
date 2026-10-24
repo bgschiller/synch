@@ -21,7 +21,6 @@ export const en = {
     "sharing.connectToSetUp": "Use Connect vault to request encryption key approval and set up your password.",
     "sharing.loading": "Loading vaults…",
     "sharing.noVaults": "No vaults available. Accept an organization invitation in your browser, then refresh.",
-    "sharing.accessNeeded": "Key approval needed",
     "sharing.connected": "Connected on this device",
     "sharing.notConnected": "Not connected on this device",
     "sharing.unavailable": "Sharing is not available for this vault.",

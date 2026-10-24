@@ -27,7 +27,6 @@ export const zhCn = {
     "sharing.connectToSetUp": "使用连接 vault 申请加密密钥批准并设置密码。",
     "sharing.loading": "正在加载 Vault…",
     "sharing.noVaults": "没有可用的 Vault。请在浏览器中接受组织邀请，然后刷新。",
-    "sharing.accessNeeded": "需要密钥批准",
     "sharing.connected": "已在此设备上连接",
     "sharing.notConnected": "未在此设备上连接",
     "sharing.unavailable": "此 Vault 不支持共享。",

@@ -25,7 +25,7 @@ export interface SharingVault {
   shared: boolean;
   personal: boolean;
   canManage: boolean;
-  status: "active" | "pending_key" | "revoked" | null;
+  status: "active" | "revoked" | null;
   members: {
     userId: string;
     name: string;

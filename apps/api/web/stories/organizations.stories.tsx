@@ -69,7 +69,6 @@ export const AccessStates: Story = {
     ...organization,
     vaults: [
       organization.vaults[0],
-      { id: "pending", name: "New team vault", shared: true, status: "pending_key", members: [] },
       { id: "revoked", name: "Archived project", shared: true, status: "revoked", members: [
         { userId: "member", email: "jamie@example.com", status: "revoked" },
       ] },

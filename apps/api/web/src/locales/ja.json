@@ -203,7 +203,6 @@
     "admin": "管理者",
     "member": "メンバー",
     "active": "有効",
-    "pending_key": "キー設定待ち",
     "revoked": "取り消し済み",
     "pending": "承諾待ち",
     "expired": "期限切れ",
@@ -219,7 +218,6 @@
     "noOrganizations": "組織がありません。",
     "noVaults": "vaultがありません。リモートvault画面で作成してください。",
     "suspended": "共有同期は停止中です。データは保持され、Plus を再契約するとアクセスが再開します。",
-    "keyHelp": "鍵の設定はObsidianで行ってください。",
     "plusLimits": "Plus：所有者を含む3名 · Vault 3個 · 各 Vault 5 GB · ファイルあたり100 MB · 履歴1年",
     "cancel": "招待をキャンセル",
     "resend": "再送信",
@@ -244,7 +242,6 @@
     "missing": "管理者から受け取った招待リンクを開いてください。",
     "accept": "招待を承諾",
     "reject": "招待を拒否",
-    "next": "招待を承諾しました。Obsidian でキー設定を続けてください。",
     "organizations": "組織を管理",
     "switchAccount": "アカウントを切り替え",
     "wrongAccount": "このアカウントでは招待を開けません。招待を受け取ったメールアドレスでログインしてください。"

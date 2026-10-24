@@ -27,7 +27,6 @@ export const ja = {
     "sharing.connectToSetUp": "vault接続から暗号鍵の承認を申請し、パスワードを設定してください。",
     "sharing.loading": "Vault を読み込み中…",
     "sharing.noVaults": "表示できる Vault がありません。ブラウザーで組織への招待を承諾してから更新してください。",
-    "sharing.accessNeeded": "暗号鍵の承認が必要",
     "sharing.connected": "このデバイスに接続済み",
     "sharing.notConnected": "このデバイスに未接続",
     "sharing.unavailable": "この Vault では共有を利用できません。",

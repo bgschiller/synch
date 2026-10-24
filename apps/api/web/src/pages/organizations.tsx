@@ -302,13 +302,6 @@ export function OrganizationsPage({ t, locale }: PageProps<"organizations">) {
               <div className="org-panel-heading">
                 <h2 className="org-section-title">{t("vaults")}</h2>
               </div>
-              {organization.vaults.some(
-                (vault) =>
-                  vault.status === "pending_key" ||
-                  vault.members.some(
-                    (member) => member.status === "pending_key",
-                  ),
-              ) && <p className="org-help">{t("keyHelp")}</p>}
               {organization.vaults.map((vault) => (
                 <section key={vault.id} className="org-panel org-vault">
                   <div className="org-vault-header">
@@ -568,7 +561,7 @@ function Invitations({
             <div key={invitation.id} className="org-row">
               <span className="org-person">
                 {invitation.email}
-                <span className={`access-status ${expired ? "access-status--expired" : "access-status--pending_key"}`}>
+                <span className={`access-status ${expired ? "access-status--expired" : "access-status--pending"}`}>
                   {t(expired ? "expired" : "pending")}
                 </span>
               </span>
