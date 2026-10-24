@@ -109,13 +109,13 @@ describe("self-host-update sync script", () => {
 		expect(read(repoDir, ".env")).toBe("SECRET=1");
 	});
 
-	it("mirrors the tracked browser crypto deployment artifact", () => {
-		write(upstreamDir, "public/vault-crypto.js", "current bundle");
-		write(repoDir, "public/vault-crypto.js", "stale bundle");
+	it("mirrors a committed public asset", () => {
+		write(upstreamDir, "public/tracked-asset.js", "current bundle");
+		write(repoDir, "public/tracked-asset.js", "stale bundle");
 
 		runSync();
 
-		expect(read(repoDir, "public/vault-crypto.js")).toBe("current bundle");
+		expect(read(repoDir, "public/tracked-asset.js")).toBe("current bundle");
 	});
 
 	it("warns when upstream workflow files drift from the clone", () => {

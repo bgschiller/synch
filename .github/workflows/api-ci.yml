@@ -45,7 +45,7 @@ jobs:
         uses: ./.github/actions/detect-affected
         with:
           package-dir: apps/api
-          full-run-paths: .github/workflows/api-ci.yml .github/actions/detect-affected/action.yml packages/vault-crypto scripts/sync-api-lockfile.mjs
+          full-run-paths: .github/workflows/api-ci.yml .github/actions/detect-affected/action.yml scripts/sync-api-lockfile.mjs
 
   api:
     needs: detect
@@ -67,8 +67,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm check:api-lockfile
-
-      - run: pnpm -C apps/api check:vault-crypto
 
       - run: pnpm -C apps/api typecheck
 

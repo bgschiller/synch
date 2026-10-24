@@ -42,7 +42,6 @@ pnpm -C apps/obsidian-plugin lint
 pnpm -C apps/obsidian-plugin build
 
 pnpm -C packages/sync-client test --run
-pnpm -C packages/vault-crypto test --run
 
 pnpm -C apps/www build
 ```

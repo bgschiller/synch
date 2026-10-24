@@ -163,9 +163,6 @@ importers:
       '@synch/sync-client':
         specifier: workspace:*
         version: link:../../packages/sync-client
-      '@synch/vault-crypto':
-        specifier: workspace:*
-        version: link:../../packages/vault-crypto
       dexie:
         specifier: ^4.4.2
         version: 4.4.2
@@ -261,9 +258,6 @@ importers:
       '@synch/sync-testkit':
         specifier: workspace:*
         version: link:../../packages/sync-testkit
-      '@synch/vault-crypto':
-        specifier: workspace:*
-        version: link:../../packages/vault-crypto
       '@types/node':
         specifier: ^25.6.0
         version: 25.6.0
@@ -284,10 +278,6 @@ importers:
         version: 8.21.0
 
   packages/sync-client:
-    dependencies:
-      '@synch/vault-crypto':
-        specifier: workspace:*
-        version: link:../vault-crypto
     devDependencies:
       '@types/node':
         specifier: ^25.6.0
@@ -301,9 +291,6 @@ importers:
       '@synch/sync-client':
         specifier: workspace:*
         version: link:../sync-client
-      '@synch/vault-crypto':
-        specifier: workspace:*
-        version: link:../vault-crypto
       '@types/node':
         specifier: ^25.6.0
         version: 25.6.0
@@ -322,16 +309,6 @@ importers:
 
   packages/tsconfig: {}
 
-  packages/vault-crypto:
-    dependencies:
-      hash-wasm:
-        specifier: ^4.12.0
-        version: 4.12.0
-    devDependencies:
-      vitest:
-        specifier: ^4.1.4
-        version: 4.1.4(@opentelemetry/api@1.9.1)(@types/node@25.6.0)(jsdom@30.1.1(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@25.6.0)(typescript@5.9.3))(vite@8.1.5(@types/node@25.6.0)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.8.3))
-
   tests/sync-e2e:
     devDependencies:
       '@synch/sync-client':
@@ -340,9 +317,6 @@ importers:
       '@synch/sync-testkit':
         specifier: workspace:*
         version: link:../../packages/sync-testkit
-      '@synch/vault-crypto':
-        specifier: workspace:*
-        version: link:../../packages/vault-crypto
       '@types/node':
         specifier: ^25.6.0
         version: 25.6.0
@@ -4334,9 +4308,6 @@ packages:
   has-tostringtag@1.0.2:
     resolution: {integrity: sha512-NqADB8VjPFLM2V0VvHUewwwsw0ZWBaIdgo+ieHtK3hasLz4qeCRjYcqfB6AQrBggRKppKF8L52/VqdVsO47Dlw==}
     engines: {node: '>= 0.4'}
-
-  hash-wasm@4.12.0:
-    resolution: {integrity: sha512-+/2B2rYLb48I/evdOIhP+K/DD2ca2fgBjp6O+GBEnCDk2e4rpeXIK8GvIyRPjTezgmWn9gmKwkQjjx6BtqDHVQ==}
 
   hasown@2.0.3:
     resolution: {integrity: sha512-ej4AhfhfL2Q2zpMmLo7U1Uv9+PyhIZpgQLGT1F9miIGmiCJIoCgSmczFdrc97mWT4kVY72KA+WnnhJ5pghSvSg==}
@@ -10372,8 +10343,6 @@ snapshots:
   has-tostringtag@1.0.2:
     dependencies:
       has-symbols: 1.1.0
-
-  hash-wasm@4.12.0: {}
 
   hasown@2.0.3:
     dependencies:

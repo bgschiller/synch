@@ -21,11 +21,6 @@ import { translator } from "../lib/i18n";
 import * as navigation from "../lib/navigation";
 import type { Organization } from "../lib/organizations";
 
-const cryptoMock = vi.hoisted(() => ({
-  validateVaultPassword: vi.fn(),
-  createPasswordWrappedRemoteVaultKey: vi.fn(),
-}));
-vi.mock("../../vendor/vault-crypto.js", () => cryptoMock);
 const session = {
   user: { id: "user-1", email: "owner@example.com", name: "Owner" },
 };
@@ -55,8 +50,6 @@ let fetchMock: ReturnType<typeof vi.fn<typeof fetch>>;
 beforeEach(() => {
   fetchMock = vi.fn<typeof fetch>();
   vi.stubGlobal("fetch", fetchMock);
-  cryptoMock.validateVaultPassword.mockReset().mockReturnValue({ ok: true });
-  cryptoMock.createPasswordWrappedRemoteVaultKey.mockReset();
 });
 
 describe("authentication", () => {
@@ -176,23 +169,13 @@ describe("device approval", () => {
 });
 
 describe("vault safety", () => {
-  it("creates using only the wrapped key envelope and prevents duplicate submits", async () => {
-    const envelope = {
-      version: 1,
-      kdf: { name: "argon2id" },
-      wrap: { ciphertext: "encrypted" },
-    };
-    const rawKey = new Uint8Array([1, 2, 3]);
-    let finish!: (value: {
-      envelope: typeof envelope;
-      remoteVaultKey: Uint8Array;
-    }) => void;
-    cryptoMock.createPasswordWrappedRemoteVaultKey.mockReturnValue(
-      new Promise((resolve) => {
-        finish = resolve;
+  it("creates with only the name and prevents duplicate submits", async () => {
+    let finish!: () => void;
+    fetchMock.mockReturnValue(
+      new Promise<Response>((resolve) => {
+        finish = () => resolve(json({ id: "vault-1" }));
       }),
     );
-    fetchMock.mockResolvedValue(json({ id: "vault-1" }));
     const success = vi.fn();
     const close = vi.fn();
     render(
@@ -205,14 +188,6 @@ describe("vault safety", () => {
     );
     const user = userEvent.setup();
     await user.type(screen.getByLabelText("Vault name"), "Vault");
-    await user.type(
-      screen.getByLabelText("Vault password"),
-      "secret-vault-passphrase",
-    );
-    await user.type(
-      screen.getByLabelText("Confirm vault password"),
-      "secret-vault-passphrase",
-    );
     await user.click(screen.getByRole("button", { name: "Create vault" }));
     expect(
       (screen.getByRole("button", { name: "Creating..." }) as HTMLButtonElement)
@@ -224,44 +199,13 @@ describe("vault safety", () => {
       new Event("cancel", { cancelable: true }),
     );
     expect(close).not.toHaveBeenCalled();
-    await act(async () => finish({ envelope, remoteVaultKey: rawKey }));
+    await act(async () => finish());
     await waitFor(() => expect(success).toHaveBeenCalledWith("Vault"));
-    expect(
-      cryptoMock.createPasswordWrappedRemoteVaultKey,
-    ).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
       name: "Vault",
       organizationId: "org-1",
-      initialWrapper: { kind: "password", envelope },
     });
-    expect([...rawKey]).toEqual([0, 0, 0]);
-  });
-  it("rejects password mismatches without creating or uploading a key", async () => {
-    render(
-      <CreateVaultDialog
-        organizationId="org-1"
-        t={await translator("vaults", "en")}
-        onClose={() => {}}
-        onSuccess={() => {}}
-      />,
-    );
-    const user = userEvent.setup();
-    await user.type(screen.getByLabelText("Vault name"), "Vault");
-    await user.type(
-      screen.getByLabelText("Vault password"),
-      "correct-passphrase",
-    );
-    await user.type(
-      screen.getByLabelText("Confirm vault password"),
-      "different-passphrase",
-    );
-    await user.click(screen.getByRole("button", { name: "Create vault" }));
-    await screen.findByText("Passwords do not match.");
-    expect(
-      cryptoMock.createPasswordWrappedRemoteVaultKey,
-    ).not.toHaveBeenCalled();
-    expect(fetchMock).not.toHaveBeenCalled();
   });
   it("requires the exact vault name and leaves the dialog usable after deletion fails", async () => {
     fetchMock
@@ -345,14 +289,9 @@ describe("vault safety", () => {
     await userEvent.click(within(actions.closest("details")!).getByRole("button", { name: "Delete" }));
     expect(screen.getByRole("dialog")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    cryptoMock.createPasswordWrappedRemoteVaultKey.mockResolvedValue({
-      envelope: { version: 1 }, remoteVaultKey: new Uint8Array([1, 2, 3]),
-    });
     await userEvent.click(within(screen.getByRole("region", { name: "Second organization" })).getByRole("button", { name: "Create vault" }));
     const dialog = within(screen.getByRole("dialog"));
     await userEvent.type(dialog.getByLabelText("Vault name"), "New team vault");
-    await userEvent.type(dialog.getByLabelText("Vault password"), "secret-vault-passphrase");
-    await userEvent.type(dialog.getByLabelText("Confirm vault password"), "secret-vault-passphrase");
     await userEvent.click(dialog.getByRole("button", { name: "Create vault" }));
     await waitFor(() => {
       const creation = fetchMock.mock.calls.find(([url, init]) => url === "/v1/vaults" && init?.method === "POST");

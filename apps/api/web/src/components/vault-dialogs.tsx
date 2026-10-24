@@ -4,16 +4,6 @@ import { ApiError, request } from "../lib/api";
 import type { Translator } from "../lib/i18n";
 import type { Vault } from "../pages/vaults";
 
-export const loadVaultCrypto = () => import("../../vendor/vault-crypto.js");
-const passwordErrors = {
-  required: "passwordRequired",
-  outer_spaces: "passwordOuterSpaces",
-  min_length: "passwordMinLength",
-  max_length: "passwordMaxLength",
-  too_weak: "passwordTooWeak",
-  repeated_character: "passwordRepeatedCharacter",
-  simple_sequence: "passwordSimpleSequence",
-} as const;
 interface DialogProps {
   t: Translator<"vaults">;
   onClose: () => void;
@@ -26,8 +16,6 @@ export function CreateVaultDialog({
   onSuccess,
 }: DialogProps & { organizationId: string }) {
   const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function submit(event: SubmitEvent<HTMLFormElement>) {
@@ -41,39 +29,14 @@ export function CreateVaultDialog({
     setBusy(true);
     setError("");
     try {
-      let vaultCrypto: Awaited<ReturnType<typeof loadVaultCrypto>>;
-      try {
-        vaultCrypto = await loadVaultCrypto();
-      } catch {
-        setError(t("cryptoLoadFailed"));
-        return;
-      }
-      const validation = vaultCrypto.validateVaultPassword(password);
-      if (!validation.ok) {
-        setError(
-          t(passwordErrors[validation.code], { count: validation.count ?? "" }),
-        );
-        return;
-      }
-      if (password !== confirmation) {
-        setError(t("passwordMismatch"));
-        return;
-      }
-      // Production-strength Argon2id and key wrapping run only in the browser.
-      const { envelope, remoteVaultKey } =
-        await vaultCrypto.createPasswordWrappedRemoteVaultKey(password);
-      remoteVaultKey.fill(0);
       await request("/v1/vaults", {
         method: "POST",
         fallback: t("unableToCreateVault"),
         body: {
           name: trimmedName,
           organizationId,
-          initialWrapper: { kind: "password", envelope },
         },
       });
-      setPassword("");
-      setConfirmation("");
       onSuccess(trimmedName);
     } catch (error) {
       setError(error instanceof ApiError ? error.message : t("apiUnavailable"));
@@ -110,46 +73,11 @@ export function CreateVaultDialog({
                 }}
               />
             </div>
-            <div className="field">
-              <label className="label" htmlFor="create-password">
-                {t("createPasswordLabel")}
-              </label>
-              <input
-                id="create-password"
-                className="input"
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                disabled={busy}
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                  setError("");
-                }}
-              />
-            </div>
-            <div className="field">
-              <label className="label" htmlFor="create-password-confirm">
-                {t("createConfirmPasswordLabel")}
-              </label>
-              <input
-                id="create-password-confirm"
-                className="input"
-                type="password"
-                autoComplete="new-password"
-                value={confirmation}
-                disabled={busy}
-                onChange={(event) => {
-                  setConfirmation(event.target.value);
-                  setError("");
-                }}
-              />
-            </div>
             {error && (
               <p id="create-error" className="form-error" role="alert">
                 {error}
               </p>
             )}
-            <p className="form-hint">{t("createPasswordHint")}</p>
           </div>
         </div>
         <div className="dialog-footer">
@@ -166,7 +94,7 @@ export function CreateVaultDialog({
             id="confirm-create"
             type="submit"
             className="btn btn--primary"
-            disabled={busy || !name.trim() || !password || !confirmation}
+            disabled={busy || !name.trim()}
           >
             {t(busy ? "creating" : "createConfirm")}
           </BusyButton>

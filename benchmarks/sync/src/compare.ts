@@ -60,7 +60,6 @@ async function stageDefinition(checkout: string, frozen: string) {
       await mkdir(dirname(link), { recursive: true });
       const target = name === "@synch/sync-testkit" ? join(checkout, "packages/sync-testkit")
         : name === "@synch/sync-client" ? join(checkout, "packages/sync-client")
-        : name === "@synch/vault-crypto" ? join(checkout, "packages/vault-crypto")
         : await realpath(join(root, folder, "node_modules", name));
       await symlink(target, link, "dir");
     }

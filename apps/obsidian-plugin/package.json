@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsgo --noEmit --skipLibCheck && node esbuild.config.mjs production",
-    "lint": "cd ../.. && eslint apps/obsidian-plugin/src packages/sync-client/src packages/vault-crypto/src --max-warnings=0",
+    "lint": "cd ../.. && eslint apps/obsidian-plugin/src packages/sync-client/src --max-warnings=0",
     "lint:fix": "pnpm run lint --fix",
     "bump:version": "node scripts/bump-release-version.mjs",
     "release-notes:prepare": "node scripts/prepare-release-notes.mjs",
@@ -32,7 +32,6 @@
   },
   "dependencies": {
     "@synch/sync-client": "workspace:*",
-    "@synch/vault-crypto": "workspace:*",
     "dexie": "^4.4.2",
     "diff": "^9.0.0"
   }

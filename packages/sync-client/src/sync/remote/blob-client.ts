@@ -1,5 +1,5 @@
 import { extractErrorMessage, type HttpResponseLike } from "../../http/request";
-import { toArrayBuffer } from "@synch/vault-crypto";
+import { toArrayBuffer } from "../core/content";
 import { TransferScheduler } from "./transfer-scheduler";
 import type { SyncAuthorizedRequestClient } from "./request-client";
 

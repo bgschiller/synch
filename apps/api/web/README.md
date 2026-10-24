@@ -12,19 +12,15 @@ From the repository root:
 
 ```sh
 pnpm -C apps/api build:public
-pnpm -C apps/api check:vault-crypto
 pnpm -C apps/api typecheck:web
 pnpm -C apps/api test:web
 ```
 
 Edit `web/`, not `public/`. `build:public` replaces `apps/api/public` with the
 complete production output, including hashed JS/CSS and copied `static/` files.
-`public/` is ignored by Git. Commit `web/` source, static assets, and generated
-`web/vendor/` changes. `check:vault-crypto` verifies the committed crypto bundle
-and declarations against the shared source without rewriting them. CI runs this
-check before any build so a stale vendor artifact cannot be silently refreshed.
-The unit and Node E2E test commands build the UI before testing its generated
-assets. CI also checks locale keys and runs React interaction tests.
+`public/` is ignored by Git. Commit `web/` source and static assets. The unit
+and Node E2E test commands build the UI before testing its generated assets. CI
+also checks locale keys and runs React interaction tests.
 
 Cloudflare build/deploy scripts explicitly build the UI before invoking Wrangler.
 This also supports older self-host clones whose preserved `wrangler.jsonc` lacks
@@ -38,19 +34,12 @@ For an older self-host clone using a direct `wrangler deploy` command, change th
 deployment command to `pnpm run deploy` or add the current custom build hook.
 Do not replace resource bindings in its existing `wrangler.jsonc`.
 
-### Standalone templates and encryption
+### Standalone templates
 
 Deploy to Cloudflare copies only `apps/api`, and the Docker build also has no
-shared package source. `web/vendor/vault-crypto.js` and its TypeScript declarations
-are therefore committed generated artifacts of `packages/vault-crypto/src`.
-In a workspace, `build:public` regenerates them and `check:vault-crypto` verifies them.
-Without that package, the same commands use the committed artifacts. Do not edit
-vendor files or create a separate encryption implementation here.
-
-Vite bundles this module as a lazy, same-origin chunk. Vault password validation,
-key generation, and production-strength Argon2id wrapping stay in the browser.
-Only the encrypted key envelope is sent to the API. No password or unencrypted
-vault key is persisted in browser storage or transmitted.
+shared package source. `build:public` produces a self-contained UI bundle under
+`public/` with no dependency on the rest of the workspace, so both deployments
+work without shared packages.
 
 ## Local development
 

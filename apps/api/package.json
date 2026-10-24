@@ -33,7 +33,6 @@
 		"typecheck:web": "tsgo --noEmit -p web/tsconfig.json",
 		"test:web": "vitest run --config vitest.web.config.mts",
 		"dev:web:api": "wrangler dev --env managed --var DEV_MODE:true --var BETTER_AUTH_URL:http://127.0.0.1:5173",
-		"check:vault-crypto": "node ./scripts/build-vault-crypto.mjs --check",
 		"storybook": "storybook dev -p 6006 --no-open --disable-telemetry",
 		"build:storybook": "storybook build --disable-telemetry",
 		"typecheck:storybook": "tsgo --noEmit -p .storybook/tsconfig.json"

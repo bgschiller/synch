@@ -8,7 +8,6 @@ import { Brand, LoadingSkeleton, Modal, Status, type StatusValue } from "../comp
 import {
   CreateVaultDialog,
   DeleteVaultDialog,
-  loadVaultCrypto,
 } from "../components/vault-dialogs";
 import { ApiError, getSession, request, signOut, type User } from "../lib/api";
 import { localUrl, signIn } from "../lib/navigation";
@@ -214,7 +213,6 @@ export function VaultsPage({ t, locale }: PageProps<"vaults">) {
                       disabled={loading || refreshRequired || !canManage(organization)}
                       onClick={() => {
                         setCreating(organization);
-                        void loadVaultCrypto().catch(() => {});
                       }}
                     >
                       <span aria-hidden="true">＋</span> {t("createVault")}

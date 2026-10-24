@@ -63,15 +63,16 @@ export function parseSyncedEntryMetadata(value: string): SyncedEntryMetadata {
   };
 }
 
+export function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer instanceof ArrayBuffer &&
+    bytes.byteOffset === 0 &&
+    bytes.byteLength === bytes.buffer.byteLength
+    ? bytes.buffer
+    : bytes.slice().buffer;
+}
+
 export async function hashBytes(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    bytes.buffer instanceof ArrayBuffer &&
-      bytes.byteOffset === 0 &&
-      bytes.byteLength === bytes.buffer.byteLength
-      ? bytes.buffer
-      : bytes.slice().buffer,
-  );
+  const digest = await crypto.subtle.digest("SHA-256", toArrayBuffer(bytes));
   return Array.from(new Uint8Array(digest), (byte) =>
     byte.toString(16).padStart(2, "0"),
   ).join("");

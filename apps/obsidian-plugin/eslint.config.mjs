@@ -6,7 +6,6 @@ import { fileURLToPath } from "node:url";
 const repositoryRoot = fileURLToPath(new URL("../../", import.meta.url));
 const sharedSources = [
   "packages/sync-client/src/**/*.ts",
-  "packages/vault-crypto/src/**/*.ts",
 ];
 
 export default defineConfig([

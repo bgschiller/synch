@@ -1,5 +1,4 @@
 import { getLanguage } from "obsidian";
-import type { VaultPasswordValidation } from "@synch/vault-crypto";
 
 import { messages } from "./messages";
 import type { SynchErrorContextKey, SynchLocale, SynchMessageKey } from "./types";
@@ -45,25 +44,4 @@ export function formatErrorNotice(
 
   const message = error instanceof Error ? error.message : String(error);
   return t("error.detail", { context: t(contextKey), message });
-}
-
-export function formatVaultPasswordValidationError(
-  validation: Extract<VaultPasswordValidation, { ok: false }>,
-): string {
-  switch (validation.code) {
-    case "required":
-      return t("vault.passwordRequired");
-    case "outer_spaces":
-      return t("vault.passwordNoOuterSpaces");
-    case "min_length":
-      return t("vault.passwordMinLength", { count: validation.count ?? 0 });
-    case "max_length":
-      return t("vault.passwordMaxLength", { count: validation.count ?? 0 });
-    case "too_weak":
-      return t("vault.passwordTooWeak");
-    case "repeated_character":
-      return t("vault.passwordRepeated");
-    case "simple_sequence":
-      return t("vault.passwordSequence");
-  }
 }

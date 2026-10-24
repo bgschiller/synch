@@ -1,6 +1,6 @@
 import type { Plugin, TAbstractFile, TFile } from "obsidian";
 
-import { toArrayBuffer } from "@synch/vault-crypto";
+import { toArrayBuffer } from "@synch/sync-client/core";
 import { type SyncFileRules, isForbiddenVaultPath } from "@synch/sync-client/core";
 
 import type {
