@@ -169,7 +169,11 @@ export class PullBlobPreparer {
       await store.putBlob({
         blobId,
         hash: actualHash,
-        encryptedBytes,
+        // Identity crypto makes `decryptSyncBlob` return `encryptedBytes`
+        // unchanged, so `hashAndReturnBytes` transfers (detaches) the very
+        // buffer `encryptedBytes` references. Store the returned buffer, whose
+        // content is identical, so the cache is never a detached view.
+        encryptedBytes: bytes,
         role: "remote",
         refEntryId: plan.state.entryId,
         cachedAt: Date.now(),

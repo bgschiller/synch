@@ -61,13 +61,12 @@ export async function reapplyAllowedRemoteVaultConfig(
             current.revision === remote.revision && current.blobId === remote.blobId &&
             current.hash === remote.hash) return 0;
 
-        let encryptedBytes: Uint8Array | null = null;
         let bytes: Uint8Array | null = null;
         if (!remote.deleted) {
           if (!remote.blobId) return 0;
-          encryptedBytes = await deps.blobClient.downloadBlob(token.vaultId, remote.blobId);
           const hashed = await contentRuntime.hashAndReturnBytes(await decryptSyncBlob(
-            encryptedBytes, { blobId: remote.blobId },
+            await deps.blobClient.downloadBlob(token.vaultId, remote.blobId),
+            { blobId: remote.blobId },
           ));
           bytes = hashed.bytes;
           if (hashed.hash !== remote.hash) {
@@ -86,9 +85,13 @@ export async function reapplyAllowedRemoteVaultConfig(
               deleted: remote.deleted, updatedAt: remote.updatedAt,
               localMtime: null, localSize: null,
             });
-            if (encryptedBytes && remote.blobId) {
+            if (bytes && remote.blobId) {
               await store.putBlob({
-                blobId: remote.blobId, hash: remote.hash, encryptedBytes,
+                blobId: remote.blobId, hash: remote.hash,
+                // Identity crypto makes decrypt return the download unchanged,
+                // so hashing transfers (detaches) that buffer. Store the
+                // returned buffer, whose content is identical, instead.
+                encryptedBytes: bytes,
                 role: "remote", refEntryId: remote.entryId, cachedAt: Date.now(),
               });
             }
