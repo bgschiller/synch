@@ -452,9 +452,9 @@ describe("self-hosted Node runtime: end-to-end sync", () => {
 		expect(trailingSlash.status).toBe(200);
 		expect(trailingSlash.headers.get("content-type")).toMatch(/^text\/html/);
 
-		const root = await fetch(`${baseUrl}/`);
-		expect(root.status).toBe(404);
-		await expect(root.json()).resolves.toMatchObject({ error: "not_found" });
+		const root = await fetch(`${baseUrl}/`, { redirect: "manual" });
+		expect(root.status).toBe(302);
+		expect(root.headers.get("location")).toBe("/signin");
 
 		const missing = await fetch(`${baseUrl}/definitely-not-a-public-asset`);
 		expect(missing.status).toBe(404);
