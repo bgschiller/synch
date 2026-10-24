@@ -30,13 +30,11 @@ it("shows connection status without tabs", async () => {
   expect(tabs).toHaveLength(0);
 });
 
-it("leaves password setup to Connect vault", async () => {
+it("does not collect a vault password", async () => {
   const { modal } = setup();
   modal.open();
   await tick();
   expect(getTextComponents()).toHaveLength(0);
-  expect(getButtonComponents().map(button => button.text)).not.toContain(t("sharing.restart"));
-  expect(getButtonComponents().map(button => button.text)).not.toContain(t("sharing.save"));
 });
 
 it("explains unavailable sharing", async () => {

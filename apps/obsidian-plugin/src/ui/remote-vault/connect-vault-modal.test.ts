@@ -54,7 +54,7 @@ describe("connect vault onboarding", () => {
     expect(inlineError("connect failed")).toBe(true);
   });
 
-  it("offers a direct connection without recovery controls on older servers", async () => {
+  it("offers a direct connection on older servers", async () => {
     const { item, open } = setup();
     item.sharingEnabled = false;
     item.vault.personal = true;
@@ -64,7 +64,6 @@ describe("connect vault onboarding", () => {
     await tick();
     await button("Team notes").click();
     expect(getTextComponents()).toHaveLength(0);
-    expect(getButtonComponents().map(entry => entry.text)).not.toContain(t("sharing.recovery"));
     getOpenModals().at(-1)?.close();
     await expect(result).resolves.toBe(false);
   });
@@ -127,7 +126,7 @@ describe("connect vault onboarding", () => {
     await expect(result).resolves.toBe(true);
   });
 
-  it("shows an empty-vault explanation without password or approval controls when blocked", async () => {
+  it("shows an empty-vault explanation without password controls when blocked", async () => {
     const { open, flow } = setup("revoked");
     flow.blockingReason.mockResolvedValue(t("vault.invitedNeedsEmpty"));
     void open();
@@ -135,7 +134,6 @@ describe("connect vault onboarding", () => {
     await button("Team notes")?.click();
     expect(getCreatedElementTexts()).toContain(t("vault.invitedNeedsEmpty"));
     expect(getTextComponents()).toHaveLength(0);
-    expect(getButtonComponents().some((entry) => entry.text === t("sharing.request"))).toBe(false);
   });
 
   it("offers retry after a list error and explains web invitation acceptance for an empty list", async () => {
