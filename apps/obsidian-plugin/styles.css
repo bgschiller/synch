@@ -590,6 +590,10 @@ button.mod-cta.synch-button-loading > .synch-button-spinner {
   white-space: nowrap;
 }
 
+.synch-presence-caret-label::before {
+  content: attr(data-label);
+}
+
 .synch-presence-selection {
   border-radius: 2px;
   box-decoration-break: clone;
