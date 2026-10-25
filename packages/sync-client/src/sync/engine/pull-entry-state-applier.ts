@@ -66,6 +66,7 @@ export interface PullEntryStateApplierDeps extends SyncContentRuntimeDeps {
     operation: "upsert" | "delete";
     path: string;
     reason: string;
+    error?: unknown;
   }) => void;
   now?: () => number;
 }
@@ -304,7 +305,9 @@ export class PullEntryStateApplier {
           for (const plan of prepared.plans) {
             this.deps.onFileSyncFailed?.({
               operation: plan.state.deleted ? "delete" : "upsert",
-              path: plan.metadata.path ?? "<unavailable>", reason: "prepare_failed",
+              path: plan.metadata.path ?? "<unavailable>",
+              reason: "prepare_failed",
+              error,
             });
           }
           throw error;
@@ -552,6 +555,7 @@ export class PullEntryStateApplier {
           operation: event.operation,
           path: event.path,
           reason: "apply_failed",
+          error,
         });
       }
       await this.restoreManifestEntries(store, originalEntries);

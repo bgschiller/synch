@@ -102,6 +102,7 @@ export type SyncDiagnosticEvent =
       path: string;
       oldPath?: string;
       reason: string;
+      error?: unknown;
     };
 
 export interface SyncDiagnosticError {

@@ -51,6 +51,7 @@ export interface SyncPullServiceDeps extends SyncContentRuntimeDeps {
     operation: "upsert" | "delete";
     path: string;
     reason: string;
+    error?: unknown;
   }) => void;
   now?: () => number;
 }

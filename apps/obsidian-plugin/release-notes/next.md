@@ -2,6 +2,8 @@
 
 ## Added
 
+- Sync diagnostics now include the build commit and attach the underlying error to per-file sync failures, so it is easier to confirm which build a device is running and diagnose failed files.
+
 ## Changed
 
 ## Fixed

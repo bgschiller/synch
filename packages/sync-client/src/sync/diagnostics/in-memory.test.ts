@@ -34,6 +34,16 @@ describe("InMemorySyncDiagnostics", () => {
     });
   });
 
+  it("includes build info in the header when provided", () => {
+    const diagnostics = new InMemorySyncDiagnostics("0.3.3", {
+      buildInfo: "855bfc7 (2026-10-25T00:00:00.000Z)",
+    });
+
+    expect(diagnostics.getSnapshot().text).toContain(
+      'buildInfo="855bfc7 (2026-10-25T00:00:00.000Z)"',
+    );
+  });
+
   it("records file paths and per-file sync flow", () => {
     const diagnostics = new InMemorySyncDiagnostics("0.3.3", {
       now: () => new Date("2026-08-07T00:00:00.000Z"),
@@ -67,6 +77,32 @@ describe("InMemorySyncDiagnostics", () => {
     );
     expect(text).toContain(
       'file_sync_completed direction="upload" operation="upsert" path="Projects/plan.md" revision=12',
+    );
+  });
+
+  it("attaches sanitized error details to file_sync_failed records", () => {
+    const diagnostics = new InMemorySyncDiagnostics("0.3.3", {
+      now: () => new Date("2026-08-07T00:00:00.000Z"),
+    });
+
+    diagnostics.record({
+      type: "file_sync_failed",
+      direction: "download",
+      operation: "upsert",
+      path: "Setting up a new laptop.md",
+      reason: "prepare_failed",
+      error: new TypeError(
+        "Cannot perform Construct on a detached or out-of-bounds ArrayBuffer",
+      ),
+    });
+
+    const text = diagnostics.getSnapshot().text;
+    expect(text).toContain(
+      'file_sync_failed direction="download" operation="upsert" path="Setting up a new laptop.md" reason="prepare_failed"',
+    );
+    expect(text).toContain('name="TypeError"');
+    expect(text).toContain(
+      'message="Cannot perform Construct on a detached or out-of-bounds ArrayBuffer"',
     );
   });
 

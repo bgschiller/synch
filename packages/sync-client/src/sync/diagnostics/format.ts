@@ -118,14 +118,21 @@ export function formatDiagnosticEvent(
         path: event.path,
         ...(event.revision !== undefined ? { revision: event.revision } : {}),
       });
-    case "file_sync_failed":
+    case "file_sync_failed": {
+      const errorDetails =
+        event.error !== undefined ? getErrorDetails(event.error) : null;
       return createRecord(timestamp, "error", event.type, {
         direction: event.direction,
         operation: event.operation,
         path: event.path,
         ...(event.oldPath ? { oldPath: event.oldPath } : {}),
         reason: event.reason,
+        ...(errorDetails?.name ? { name: errorDetails.name } : {}),
+        ...(errorDetails?.message ? { message: errorDetails.message } : {}),
+        ...(errorDetails?.code ? { code: errorDetails.code } : {}),
+        ...(errorDetails?.status !== undefined ? { status: errorDetails.status } : {}),
       });
+    }
   }
 }
 
@@ -162,10 +169,12 @@ export function formatDiagnosticRecord(record: SyncDiagnosticRecord): string {
 export function formatDiagnosticText(
   pluginVersion: string,
   records: readonly SyncDiagnosticRecord[],
+  buildInfo?: string,
 ): string {
   const header = [
     "Synch sync diagnostics",
     `pluginVersion=${formatValue(pluginVersion)}`,
+    ...(buildInfo ? [`buildInfo=${formatValue(buildInfo)}`] : []),
     `entries=${records.length}`,
   ].join("\n");
   if (records.length === 0) {

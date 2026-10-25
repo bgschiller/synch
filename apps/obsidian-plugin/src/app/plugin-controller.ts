@@ -8,6 +8,7 @@ import { SynchOrganizationRoleService } from "./organization-role-service";
 import { SynchSubscriptionService } from "./subscription-service";
 import { SynchPluginUpdateService } from "./update-service";
 import { defaultHttpClient } from "../adapters/http";
+import { getBuildInfo } from "../config";
 import {
   openExternalUrl,
   SYNCH_DEVICE_LOGIN_RETURN_URI,
@@ -84,6 +85,7 @@ export class SynchPluginController implements SynchSettingsController {
   private readonly plugin = this.deps.plugin;
   private readonly diagnostics = new InMemorySyncDiagnostics(
     this.plugin.manifest.version,
+    { buildInfo: getBuildInfo() },
   );
   private diagnosticsUnsubscribe: (() => void) | null = null;
   private readonly pluginDataStore = new SynchPluginDataStore(this.plugin);

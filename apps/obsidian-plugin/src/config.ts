@@ -1,4 +1,5 @@
 declare const __SYNCH_API_BASE_URL__: string;
+declare const __SYNCH_BUILD_INFO__: string | undefined;
 
 const FALLBACK_API_BASE_URL = "http://127.0.0.1:8787";
 const API_BASE_URL = normalizeApiBaseUrl(
@@ -10,6 +11,12 @@ const API_BASE_URL = normalizeApiBaseUrl(
 
 export function getDefaultApiBaseUrl(): string {
   return API_BASE_URL;
+}
+
+export function getBuildInfo(): string {
+  return typeof __SYNCH_BUILD_INFO__ === "string" && __SYNCH_BUILD_INFO__
+    ? __SYNCH_BUILD_INFO__
+    : "development";
 }
 
 export type SynchServerDeployment = "official_cloud" | "self_hosted";

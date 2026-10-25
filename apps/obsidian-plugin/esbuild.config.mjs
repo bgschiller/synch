@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { config as loadEnv } from "dotenv";
 import esbuild from "esbuild";
 import fs from "node:fs/promises";
@@ -12,6 +13,7 @@ loadEnv({ path: path.join(pluginRoot, ".env") });
 const production = process.argv[2] === "production";
 const pluginDir = process.env.OBSIDIAN_PLUGIN_DIR?.trim();
 const injectedApiBaseUrl = requireApiBaseUrl();
+const injectedBuildInfo = readBuildInfo();
 
 const emptyNodeBuiltinPlugin = {
   name: "empty-node-builtins",
@@ -34,6 +36,7 @@ const shared = {
   external: ["obsidian", "electron", "@codemirror/state", "@codemirror/view"],
   define: {
     __SYNCH_API_BASE_URL__: JSON.stringify(injectedApiBaseUrl),
+    __SYNCH_BUILD_INFO__: JSON.stringify(injectedBuildInfo),
   },
   format: "cjs",
   platform: "browser",
@@ -75,6 +78,23 @@ function requireApiBaseUrl() {
   }
 
   return value;
+}
+
+function readBuildInfo() {
+  const builtAt = new Date().toISOString();
+  try {
+    const commit = execSync("git rev-parse --short HEAD", {
+      encoding: "utf8",
+      cwd: pluginRoot,
+    }).trim();
+    const dirty = execSync("git status --porcelain", {
+      encoding: "utf8",
+      cwd: pluginRoot,
+    }).trim();
+    return `${commit}${dirty ? "-dirty" : ""} (${builtAt})`;
+  } catch {
+    return `unknown (${builtAt})`;
+  }
 }
 
 if (production) {

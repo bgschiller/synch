@@ -16,18 +16,21 @@ export const MAX_SYNC_DIAGNOSTIC_TEXT_LENGTH = 64 * 1024;
 
 export interface InMemorySyncDiagnosticsOptions {
   now?: () => Date;
+  buildInfo?: string;
 }
 
 export class InMemorySyncDiagnostics implements SyncDiagnostics {
   private readonly records: SyncDiagnosticRecord[] = [];
   private readonly listeners = new Set<() => void>();
   private readonly now: () => Date;
+  private readonly buildInfo: string | undefined;
 
   constructor(
     private readonly pluginVersion: string,
     options: InMemorySyncDiagnosticsOptions = {},
   ) {
     this.now = options.now ?? (() => new Date());
+    this.buildInfo = options.buildInfo;
   }
 
   record(event: SyncDiagnosticEvent): void {
@@ -49,7 +52,7 @@ export class InMemorySyncDiagnostics implements SyncDiagnostics {
   getSnapshot(): SyncDiagnosticsSnapshot {
     return {
       count: this.records.length,
-      text: formatDiagnosticText(this.pluginVersion, this.records),
+      text: formatDiagnosticText(this.pluginVersion, this.records, this.buildInfo),
     };
   }
 
@@ -75,7 +78,7 @@ export class InMemorySyncDiagnostics implements SyncDiagnostics {
   private trim(): void {
     while (
       this.records.length > MAX_SYNC_DIAGNOSTIC_ENTRIES ||
-      formatDiagnosticText(this.pluginVersion, this.records).length >
+      formatDiagnosticText(this.pluginVersion, this.records, this.buildInfo).length >
         MAX_SYNC_DIAGNOSTIC_TEXT_LENGTH
     ) {
       this.records.shift();
