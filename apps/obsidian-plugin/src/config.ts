@@ -1,7 +1,8 @@
 declare const __SYNCH_API_BASE_URL__: string;
 declare const __SYNCH_BUILD_INFO__: string | undefined;
 
-const FALLBACK_API_BASE_URL = "http://127.0.0.1:8787";
+// Keep in sync with DEFAULT_API_BASE_URL in esbuild.config.mjs.
+const FALLBACK_API_BASE_URL = "https://synch-api.bgschiller.workers.dev";
 const API_BASE_URL = normalizeApiBaseUrl(
   typeof __SYNCH_API_BASE_URL__ === "string"
     ? __SYNCH_API_BASE_URL__

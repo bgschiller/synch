@@ -53,12 +53,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Validate release configuration
+      - name: Resolve API base URL
         run: |
-          test -n "$API_BASE_URL" || {
-            echo "Set repository variable OBSIDIAN_PLUGIN_API_BASE_URL before releasing."
-            exit 1
-          }
+          if [ -n "$API_BASE_URL" ]; then
+            echo "Building against $API_BASE_URL (from repository variable OBSIDIAN_PLUGIN_API_BASE_URL)."
+          else
+            echo "No repository variable set; using the default API base URL baked into the build."
+          fi
 
       - name: Bump version
         id: version

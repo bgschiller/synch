@@ -10,9 +10,12 @@ const pluginRoot = path.dirname(fileURLToPath(import.meta.url));
 const releaseDir = path.join(pluginRoot, "dist");
 loadEnv({ path: path.join(pluginRoot, ".env") });
 
+// Keep in sync with FALLBACK_API_BASE_URL in src/config.ts.
+const DEFAULT_API_BASE_URL = "https://synch-api.bgschiller.workers.dev";
+
 const production = process.argv[2] === "production";
 const pluginDir = process.env.OBSIDIAN_PLUGIN_DIR?.trim();
-const injectedApiBaseUrl = requireApiBaseUrl();
+const injectedApiBaseUrl = resolveApiBaseUrl();
 const injectedBuildInfo = readBuildInfo();
 
 const emptyNodeBuiltinPlugin = {
@@ -71,13 +74,9 @@ async function copyArtifacts() {
   console.log(`[synch] copied plugin bundle to ${pluginDir}`);
 }
 
-function requireApiBaseUrl() {
+function resolveApiBaseUrl() {
   const value = process.env.API_BASE_URL?.trim();
-  if (!value) {
-    throw new Error("API_BASE_URL is required to build the Obsidian plugin.");
-  }
-
-  return value;
+  return value || DEFAULT_API_BASE_URL;
 }
 
 function readBuildInfo() {
