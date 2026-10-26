@@ -9,4 +9,10 @@ export interface VaultKeyStore {
 		name: string,
         maxVaults?: number,
 	): Promise<VaultRecord>;
+	moveVaultForUser(
+		userId: string,
+		vaultId: string,
+		targetOrganizationId: string,
+        maxVaults?: number,
+	): Promise<VaultRecord>;
 }

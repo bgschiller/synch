@@ -4,7 +4,8 @@ export type VaultApplicationErrorCode =
 	| "vault_name_exists"
 	| "forbidden"
 	| "not_found"
-	| "not_organization_member";
+	| "not_organization_member"
+	| "vault_already_in_organization";
 
 export class VaultApplicationError extends Error {
 	readonly name = "VaultApplicationError";

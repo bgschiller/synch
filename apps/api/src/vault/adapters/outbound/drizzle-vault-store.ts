@@ -207,6 +207,60 @@ export class DrizzleVaultStore
 		return toVaultRecord(rows[0]);
 	}
 
+	/**
+	 * Transfers a vault to another organization and re-derives membership from
+	 * that organization's roster. The transfer is atomic: the update either
+	 * claims the target organization's quota slot and passes the
+	 * owner/admin check, or no state changes. `sharedAt` is recomputed from
+	 * the target roster (a single-member organization keeps the vault personal;
+	 * larger rosters mark it shared), mirroring `createVaultForUser`.
+	 *
+	 * The actor is treated as the vault's creator in the destination
+	 * organization, matching the creation provenance semantics (the mover is
+	 * the one who manages and personally owns the vault in its new home).
+	 */
+	async moveVaultForUser(
+		userId: string,
+		vaultId: string,
+		targetOrganizationId: string,
+		maxVaults = 0,
+	): Promise<VaultRecord> {
+		const now = Date.now();
+		const [rows] = await this.db.batch([
+			this.db
+				.update(schema.vault)
+				.set({
+					organizationId: targetOrganizationId,
+					sharedAt: sql`CASE WHEN (SELECT count(*) FROM member WHERE organization_id=${targetOrganizationId})>1 THEN ${now} ELSE null END`,
+				})
+				.where(
+					and(
+						eq(schema.vault.id, vaultId),
+						isNull(schema.vault.deletedAt),
+						sql`(${maxVaults}=0 OR (SELECT count(*) FROM vault WHERE organization_id=${targetOrganizationId} AND deleted_at IS NULL)<${maxVaults})`,
+						sql`EXISTS (SELECT 1 FROM member WHERE organization_id=${targetOrganizationId} AND user_id=${userId} AND role IN ('owner','admin'))`,
+					),
+				)
+				.returning(),
+			// Access follows organization membership: replace the source roster's
+			// enrollments with the destination roster's.
+			this.db
+				.delete(schema.vaultMembership)
+				.where(eq(schema.vaultMembership.vaultId, vaultId)),
+			this.db
+				.insert(schema.vaultMembership)
+				.select(
+					sql`SELECT ${vaultId}, m.user_id, 1, CASE WHEN m.user_id=${userId} THEN 1 ELSE 0 END, 'active', ${now}, null FROM member m WHERE m.organization_id=${targetOrganizationId}`,
+				),
+		]);
+		if (!rows[0])
+			throw new VaultApplicationError("vault_limit_exceeded", {
+				planName: "Organization",
+				limit: maxVaults,
+			});
+		return toVaultRecord(rows[0]);
+	}
+
 	async readDefaultOrganizationIdForUser(
 		userId: string,
 	): Promise<string | null> {

@@ -6,8 +6,10 @@ import { ManagementHeader } from "../components/management-header";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Brand, LoadingSkeleton, Modal, Status, type StatusValue } from "../components/common";
 import {
+  CreateOrganizationDialog,
   CreateVaultDialog,
   DeleteVaultDialog,
+  MoveVaultDialog,
 } from "../components/vault-dialogs";
 import { ApiError, getSession, request, signOut, type User } from "../lib/api";
 import { localUrl, signIn } from "../lib/navigation";
@@ -40,6 +42,8 @@ export function VaultsPage({ t, locale }: PageProps<"vaults">) {
   const [status, setStatus] = useState<StatusValue>({ message: "" });
   const [creating, setCreating] = useState<OrganizationSummary | null>(null);
   const [deleting, setDeleting] = useState<Vault | null>(null);
+  const [creatingOrganization, setCreatingOrganization] = useState(false);
+  const [moving, setMoving] = useState<Vault | null>(null);
   const [connecting, setConnecting] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const activeRequest = useRef<AbortController | null>(null);
@@ -171,9 +175,19 @@ export function VaultsPage({ t, locale }: PageProps<"vaults">) {
       <main className={`page page--wide management-page vaults-page${firstVault ? " vaults-page--empty" : ""}`}>
         <div className="topbar management-topbar">
           <Brand />
-          {user && (
-            <AccountMenu user={user} t={t} busy={loggingOut} onSignOut={() => void logout()} />
-          )}
+          <div className="topbar-actions">
+            <button
+              type="button"
+              className="btn btn--secondary btn--compact"
+              disabled={loading || refreshRequired}
+              onClick={() => setCreatingOrganization(true)}
+            >
+              <span aria-hidden="true">＋</span> {t("createOrganization")}
+            </button>
+            {user && (
+              <AccountMenu user={user} t={t} busy={loggingOut} onSignOut={() => void logout()} />
+            )}
+          </div>
         </div>
         <ManagementHeader title={t(firstVault ? "setupTitle" : "title")} subtitle={firstVault ? t("setupIntro") : undefined}>
           {status.message && <div className="management-header-feedback">
@@ -241,6 +255,7 @@ export function VaultsPage({ t, locale }: PageProps<"vaults">) {
                           t={t}
                           disabled={loading || refreshRequired || isDeleting(vault)}
                           onDelete={() => setDeleting(vault)}
+                          onMove={organizations.length > 1 ? () => setMoving(vault) : undefined}
                         />
                       )}
                     </article>
@@ -290,6 +305,29 @@ export function VaultsPage({ t, locale }: PageProps<"vaults">) {
           onSuccess={(name) => {
             setDeleting(null);
             void loadVaults(t("queuedForDeletion", { name }));
+          }}
+        />
+      )}
+      {creatingOrganization && (
+        <CreateOrganizationDialog
+          t={t}
+          onClose={() => setCreatingOrganization(false)}
+          onCreated={(organization) => {
+            setCreatingOrganization(false);
+            void loadVaults(t("createdOrganization", { name: organization.name }));
+          }}
+        />
+      )}
+      {moving && (
+        <MoveVaultDialog
+          key={moving.id}
+          t={t}
+          vault={moving}
+          organizations={organizations}
+          onClose={() => setMoving(null)}
+          onSuccess={(name, organizationName) => {
+            setMoving(null);
+            void loadVaults(t("movedVault", { name, organization: organizationName }));
           }}
         />
       )}

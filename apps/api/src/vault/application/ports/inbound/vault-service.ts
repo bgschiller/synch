@@ -14,6 +14,11 @@ export interface VaultService {
 		name: string,
 		selectedOrganizationId?: string,
 	): Promise<VaultRecord>;
+	moveVault(
+		userId: string,
+		vaultId: string,
+		targetOrganizationId: string,
+	): Promise<VaultRecord>;
 	getVaultBootstrap(userId: string, vaultId: string): Promise<VaultBootstrapRecord>;
 	userCanAccessVault(userId: string, vaultId: string): Promise<boolean>;
 	getAccessibleVault(userId: string, vaultId: string): Promise<VaultRecord | null>;

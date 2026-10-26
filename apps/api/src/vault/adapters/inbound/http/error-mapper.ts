@@ -35,6 +35,7 @@ function vaultErrorStatus(code: VaultApplicationErrorCode): 400 | 403 | 404 | 40
 	switch (code) {
 		case "organization_required":
 		case "not_organization_member":
+		case "vault_already_in_organization":
 			return 400;
 		case "vault_limit_exceeded":
 		case "forbidden":
@@ -63,5 +64,7 @@ function vaultErrorMessage(
 			return "vault not found";
 		case "not_organization_member":
 			return "user is not a member of the organization";
+		case "vault_already_in_organization":
+			return "vault already belongs to this organization";
 	}
 }

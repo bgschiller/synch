@@ -75,6 +75,61 @@ export class VaultApplicationService implements VaultService {
 		);
 	}
 
+	async moveVault(
+		userId: string,
+		vaultId: string,
+		targetOrganizationId: string,
+	): Promise<VaultRecord> {
+		if (!(await this.userCanManageVault(userId, vaultId))) {
+			throw new VaultApplicationError("forbidden");
+		}
+
+		const vault = await this.catalogStore.readAccessibleVaultForUser(
+			userId,
+			vaultId,
+		);
+		if (!vault) throw new VaultApplicationError("not_found");
+		if (vault.organizationId === targetOrganizationId) {
+			throw new VaultApplicationError("vault_already_in_organization");
+		}
+
+		if (
+			this.canCreateInOrganization &&
+			!(await this.canCreateInOrganization(userId, targetOrganizationId))
+		) {
+			throw new VaultApplicationError("forbidden");
+		}
+
+		const policy = await this.policyReader.readOrganizationPolicy(targetOrganizationId);
+		const existingVaultCount =
+			await this.catalogStore.countVaultsForOrganization(targetOrganizationId);
+		if (
+			policy.limits.syncedVaults > 0 &&
+			existingVaultCount >= policy.limits.syncedVaults
+		) {
+			throw new VaultApplicationError("vault_limit_exceeded", {
+				planName: policy.name,
+				limit: policy.limits.syncedVaults,
+			});
+		}
+
+		if (
+			await this.catalogStore.vaultNameExistsForOrganization(
+				targetOrganizationId,
+				vault.name,
+			)
+		) {
+			throw new VaultApplicationError("vault_name_exists");
+		}
+
+		return await this.keyStore.moveVaultForUser(
+			userId,
+			vaultId,
+			targetOrganizationId,
+			policy.limits.syncedVaults,
+		);
+	}
+
 	async getVaultBootstrap(userId: string, vaultId: string): Promise<VaultBootstrapRecord> {
 		const bootstrap = await this.catalogStore.readVaultBootstrapForUser(userId, vaultId);
 		if (!bootstrap) {

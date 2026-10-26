@@ -61,6 +61,43 @@ export function registerVaultRoutes(
 		},
 	);
 
+	app.patch(
+		"/v1/vaults/:vaultId/organization",
+		ensureAuthenticatedSession,
+		zValidator(
+			"param",
+			z.object({
+				vaultId: z.string().trim().min(1),
+			}),
+		),
+		zValidator(
+			"json",
+			z.object({
+				organizationId: z.string().trim().min(1),
+			}).strict(),
+		),
+		async (c) => {
+			const user = c.var.user;
+			const { vaultId } = c.req.valid("param");
+			const { organizationId } = c.req.valid("json");
+			const moved = await deps.vaultService.moveVault(
+				user.id,
+				vaultId,
+				organizationId,
+			);
+
+			return c.json({
+				vault: {
+					id: moved.id,
+					organizationId: moved.organizationId,
+					name: moved.name,
+					activeKeyVersion: moved.activeKeyVersion,
+					createdAt: moved.createdAt.toISOString(),
+				},
+			});
+		},
+	);
+
 	app.get(
 		"/v1/vaults/:vaultId/bootstrap",
 		ensureAuthenticatedSession,

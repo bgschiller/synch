@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
 import type { Translator } from "../lib/i18n";
 
-export function VaultActions({ name, t, disabled, onDelete }: {
+export function VaultActions({ name, t, disabled, onDelete, onMove }: {
   name: string;
   t: Translator<"vaults">;
   disabled: boolean;
   onDelete: () => void;
+  onMove?: () => void;
 }) {
   const menu = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
@@ -35,6 +36,12 @@ export function VaultActions({ name, t, disabled, onDelete }: {
         </svg>
       </summary>
       <div className="vault-actions-panel">
+        {onMove && (
+          <button type="button" disabled={disabled} onClick={() => {
+            if (menu.current) menu.current.open = false;
+            onMove();
+          }}>{t("moveToOrganization")}</button>
+        )}
         <button type="button" disabled={disabled} onClick={() => {
           if (menu.current) menu.current.open = false;
           onDelete();

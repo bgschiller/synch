@@ -374,6 +374,67 @@ describe("vault integration", () => {
 		expect(duplicate.response.status).toBe(201);
 		expect(duplicate.json?.vault.name).toBe("Self Hosted Work");
 	});
+
+	it("moves a vault to another organization the user manages", async () => {
+		const owner = await signUpAndCreateVault();
+		const household = await jsonRequest<{ organization: { id: string; name: string } }>(
+			"/v1/organizations",
+			{
+				method: "POST",
+				headers: { "content-type": "application/json", cookie: owner.sessionCookie },
+				body: JSON.stringify({ name: "Household" }),
+			},
+		);
+		expect(household.response.status).toBe(201);
+
+		const moved = await jsonRequest<{
+			vault: { id: string; organizationId: string; name: string };
+		}>(`/v1/vaults/${encodeURIComponent(owner.vaultId)}/organization`, {
+			method: "PATCH",
+			headers: { "content-type": "application/json", cookie: owner.sessionCookie },
+			body: JSON.stringify({ organizationId: household.json!.organization.id }),
+		});
+		expect(moved.response.status).toBe(200);
+		expect(moved.json!.vault.organizationId).toBe(household.json!.organization.id);
+		expect(moved.json!.vault.name).toBe(owner.vaultName);
+
+		const listed = await jsonRequest<{
+			vaults: Array<{ id: string; organizationId: string }>;
+		}>("/v1/vaults", { headers: { cookie: owner.sessionCookie } });
+		expect(
+			listed.json?.vaults.find((vault) => vault.id === owner.vaultId)
+				?.organizationId,
+		).toBe(household.json!.organization.id);
+	});
+
+	it("rejects moving a vault into its current organization", async () => {
+		const owner = await signUpAndCreateVault();
+		const moved = await jsonRequest<{ vault: { id: string } }>(
+			`/v1/vaults/${encodeURIComponent(owner.vaultId)}/organization`,
+			{
+				method: "PATCH",
+				headers: { "content-type": "application/json", cookie: owner.sessionCookie },
+				body: JSON.stringify({ organizationId: owner.organizationId }),
+			},
+		);
+		expect(moved.response.status).toBe(400);
+		expect(moved.text).toContain("vault_already_in_organization");
+	});
+
+	it("rejects moving a vault the user does not manage", async () => {
+		const owner = await signUpAndCreateVault();
+		const outsider = await signUpAccount();
+
+		const moved = await jsonRequest(
+			`/v1/vaults/${encodeURIComponent(owner.vaultId)}/organization`,
+			{
+				method: "PATCH",
+				headers: { "content-type": "application/json", cookie: outsider.sessionCookie },
+				body: JSON.stringify({ organizationId: owner.organizationId }),
+			},
+		);
+		expect(moved.response.status).toBe(403);
+	});
 });
 
 async function jsonRequestWithEnv<T = unknown>(
