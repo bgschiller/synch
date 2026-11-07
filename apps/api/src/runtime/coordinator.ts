@@ -1,9 +1,5 @@
-import { readPolarProductIdsByPlanId } from "../billing/adapters/outbound/product-ids";
 import { createCoordinatorApplication } from "../composition/create-coordinator-application";
-import {
-	readCloudflareProfile,
-	type CloudflareRuntimeEnv,
-} from "../config/cloudflare";
+import type { CloudflareRuntimeEnv } from "../config/cloudflare";
 import { createDb } from "../db/client";
 import { R2BlobObjectStorage } from "../sync-blob-transfer/adapters/outbound/r2-object-storage";
 import { CoordinatorMaintenanceScheduler } from "../sync-coordinator/adapters/outbound/scheduler/maintenance-scheduler";
@@ -15,7 +11,6 @@ export function createCoordinatorRuntime(
 	ctx: DurableObjectState,
 	env: CloudflareRuntimeEnv,
 ) {
-	const profile = readCloudflareProfile(env);
 	const db = createDb(env.DB);
 	const storage = new DurableCoordinatorStorage(ctx);
 	const storageHandle = new DurableObjectCoordinatorStorageHandle(ctx.storage);
@@ -32,8 +27,6 @@ export function createCoordinatorRuntime(
 			maintenanceScheduler,
 		},
 		{
-			profile,
-			productIdsByPlanId: readPolarProductIdsByPlanId(env),
 			syncTokenSecret: env.SYNC_TOKEN_SECRET,
 			syncTokenTtlSeconds: env.SYNC_TOKEN_TTL_SECONDS,
 		},

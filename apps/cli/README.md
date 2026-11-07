@@ -1,7 +1,7 @@
 # @synch/cli
 
-Headless CLI for Synch, the end-to-end encrypted Obsidian Sync alternative. It
-drives `@synch/sync-client` with Node host adapters so a vault directory can be
+Headless CLI for Synch, an Obsidian Sync alternative. It drives
+`@synch/sync-client` with Node host adapters so a vault directory can be
 synchronized from servers, containers, or scripts without Obsidian.
 
 Requires Node.js >= 22.5 (`node:sqlite`, global `fetch`/`WebSocket`/WebCrypto).
@@ -38,7 +38,7 @@ both the token and its URL.
 - `<vault>/.synch/cli.lock` — exclusive per-vault process lock with stale-lock
   recovery.
 - `~/.config/synch/credentials.json` (XDG-aware, `chmod 600`) — session token
-  and per-vault remote vault keys, stored outside the vault.
+  and per-vault connected vault IDs, stored outside the vault.
 
 ## Development
 

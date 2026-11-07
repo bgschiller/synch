@@ -2,8 +2,8 @@
 #
 # Installs and starts the self-hosted Synch API as a systemd service.
 # Tested on Debian/Ubuntu; should work on other apt-based distros with
-# systemd. For other Linux distros, follow the manual steps in
-# apps/www/src/content/docs/self-hosting-docker/en.mdx instead.
+# systemd. For other Linux distros, use the Docker Compose path in
+# docker-compose.yml instead.
 #
 # Usage (from a clone of the repo, run as root or with sudo):
 #   cd synch/apps/api
@@ -33,7 +33,7 @@ die() { printf 'error: %s\n' "$1" >&2; exit 1; }
 
 [ "$(id -u)" -eq 0 ] || die "run this as root (sudo ./install.sh)"
 [ -f "$SCRIPT_DIR/package.json" ] || die "expected to find package.json next to this script"
-command -v systemctl >/dev/null 2>&1 || die "systemd not found - see the Docker Compose path in the self-hosting docs instead"
+command -v systemctl >/dev/null 2>&1 || die "systemd not found - see the Docker Compose path in docker-compose.yml instead"
 
 if [ ! -f /etc/debian_version ]; then
 	echo "warning: this script is written for Debian/Ubuntu; continuing anyway, but apt-based steps may fail." >&2

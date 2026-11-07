@@ -20,19 +20,6 @@ export function getBuildInfo(): string {
     : "development";
 }
 
-export type SynchServerDeployment = "official_cloud" | "self_hosted";
-
-export function getServerDeployment(apiBaseUrl: string): SynchServerDeployment {
-  try {
-    const hostname = new URL(apiBaseUrl).hostname.toLowerCase();
-    return hostname === "api.synch.run" || hostname.endsWith(".api.synch.run")
-      ? "official_cloud"
-      : "self_hosted";
-  } catch {
-    return "self_hosted";
-  }
-}
-
 export function normalizeApiBaseUrl(value: unknown, fallback: string): string {
   if (typeof value !== "string") {
     return fallback;

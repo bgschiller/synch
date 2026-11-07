@@ -58,15 +58,5 @@ export function getPluginUpdateRowContent(
     };
   }
 
-  const updateStatus = controller.getCommunityPluginUpdateStatus();
-  if (updateStatus.state === "update_available") {
-    return {
-      name: t("plugin.updateAvailable"),
-      desc: t("plugin.updateAvailableDesc", {
-        version: updateStatus.latestVersion,
-      }),
-    };
-  }
-
   return null;
 }

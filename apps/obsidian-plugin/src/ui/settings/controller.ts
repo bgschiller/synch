@@ -12,29 +12,19 @@ import type {
   SynchDeletedFile,
   SynchDeletedFilesRestoreResult,
   SynchBlockedSyncFile,
-  SynchCommunityPluginUpdateStatus,
   SynchServerCompatibilityStatus,
   SynchStorageStatus,
   SynchStorageDisplayState,
   SynchSyncLogs,
-  SynchSubscriptionStatus,
   SynchSyncState,
   SynchVersionPreview,
 } from "../contracts";
 
 export interface SynchSettingsController {
-  getCommunityPluginUpdateStatus(): SynchCommunityPluginUpdateStatus;
-  ensureCommunityPluginUpdateCheck(): Promise<void>;
-  retryCommunityPluginUpdateCheck(): Promise<void>;
   getServerCompatibilityStatus(): SynchServerCompatibilityStatus;
   getOrganizationRole(): string | null;
   isOrganizationRoleApiUnavailable(): boolean;
   ensureOrganizationRoleCheck(): Promise<void>;
-  getSubscriptionStatus(): SynchSubscriptionStatus;
-  ensureSubscriptionStatusCheck(): Promise<void>;
-  retrySubscriptionStatusCheck(): Promise<void>;
-  openBillingManagementPage(): void;
-  openPricingPage(): void;
   getAuthReadiness(): AuthReadiness;
   getAuthStatusLabel(): string;
   getSyncState(): SynchSyncState;

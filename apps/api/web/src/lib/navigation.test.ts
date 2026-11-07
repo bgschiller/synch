@@ -41,12 +41,11 @@ describe("authentication navigation", () => {
       expect(supportedReturnUri(uri)).toBe("");
   });
 });
-it("normalizes supported language variants and loads translated parameters", async () => {
-  expect(normalizeLocale("zh-Hant-TW")).toBe("zh-tw");
-  expect(normalizeLocale("ko-KR")).toBe("ko");
-  expect(normalizeLocale("fr-FR")).toBe("");
-  const t = await translator("vaults", "ko");
-  expect(t("title")).toBe("원격 vault");
+it("always uses English and loads English parameters", async () => {
+  expect(normalizeLocale("zh-Hant-TW")).toBe("en");
+  expect(normalizeLocale("ko-KR")).toBe("en");
+  const t = await translator("vaults", "en");
+  expect(t("title")).toBe("Remote vaults");
   expect(t("countMany", { count: 3 })).toContain("3");
 });
 it("keeps structured API error objects out of rendered messages", () => {

@@ -150,7 +150,7 @@ export class SharingModal extends Modal {
         vaultCount += vaults.length;
         for (const vault of vaults) {
           try {
-            this.renderVault(section, vault, organization.sharing.enabled, organization.name);
+            this.renderVault(section, vault, organization.name);
             if (this.closed) return;
           } catch (error) {
             section.createEl("p", {
@@ -196,7 +196,6 @@ export class SharingModal extends Modal {
   private renderVault(
     parent: HTMLElement,
     vault: SharingVault,
-    canShare: boolean,
     organizationName: string,
   ): void {
     const section = parent.createDiv({ cls: "synch-sharing-vault" });
@@ -210,9 +209,5 @@ export class SharingModal extends Modal {
       text: t(isActiveVault ? "sharing.connected" : "sharing.notConnected"),
       cls: "synch-sharing-badge",
     });
-    const access = section.createDiv({ cls: "synch-sharing-panel" });
-    if (!canShare) {
-      access.createEl("p", { text: t(vault.shared ? "sharing.suspended" : "sharing.unavailable"), cls: "synch-sharing-empty" });
-    }
   }
 }

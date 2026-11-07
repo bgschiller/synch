@@ -12,11 +12,9 @@ import {
   getSettingDescriptions,
   getSettingNames,
   getTextComponents,
-  getToggleComponents,
   resetObsidianMocks,
   Setting,
 } from "../../test-stubs/obsidian";
-import type { AppWithSettings } from "../contracts";
 import { createSettingsTab } from "./__tests__/settings-tab-helpers";
 
 describe("SynchSettingTab", () => {
@@ -36,7 +34,7 @@ describe("SynchSettingTab", () => {
 
     tab.open();
 
-    expect(getButtonComponents().map((button) => button.text)).toEqual([
+    expect(getButtonComponents().slice(0, 2).map((button) => button.text)).toEqual([
       t("auth.openSignInAgain"),
       t("cancel"),
     ]);
@@ -44,7 +42,12 @@ describe("SynchSettingTab", () => {
     await getButtonComponents()[1]?.click();
 
     expect(cancelDeviceLogin).toHaveBeenCalledTimes(1);
-    expect(getButtonComponents().at(-1)?.text).toBe(t("auth.signInOnThisDevice"));
+
+    // The obsidian stub appends rendered buttons rather than replacing them,
+    // so reset before re-opening to assert against the fresh render.
+    resetObsidianMocks();
+    tab.open();
+    expect(getButtonComponents()[0]?.text).toBe(t("auth.signInOnThisDevice"));
   });
 
   it("shows the normal sign-in button when device login is idle", () => {
@@ -74,10 +77,9 @@ describe("SynchSettingTab", () => {
       t("account"),
       t("authentication"),
       t("server.heading"),
-      t("server.mode"),
+      t("server.url"),
     ]);
-    expect(buttonTexts).toEqual([t("auth.signInOnThisDevice")]);
-    expect(getToggleComponents()[0]?.value).toBe(false);
+    expect(buttonTexts).toEqual([t("auth.signInOnThisDevice"), t("save")]);
     expect(getProgressBarComponents()).toEqual([]);
   });
 
@@ -97,38 +99,6 @@ describe("SynchSettingTab", () => {
     expect(getSettingDescriptions()).toContain(t("network.requiredDesc"));
     expect(getButtonComponents()).toEqual([]);
     expect(getTextComponents()).toEqual([]);
-  });
-
-  it("shows a first-row update notice that opens Community plugins when an update is available", async () => {
-    const ensureCommunityPluginUpdateCheck = vi.fn(async () => {});
-    const tab = createSettingsTab({
-      ensureCommunityPluginUpdateCheck,
-      getCommunityPluginUpdateStatus: () => ({
-        state: "update_available",
-        currentVersion: "0.0.1",
-        latestVersion: "0.0.2",
-      }),
-    });
-    const openedSettingTabs: string[] = [];
-    (tab.app as AppWithSettings).setting = {
-      open: () => {},
-      openTabById: (id) => {
-        openedSettingTabs.push(id);
-      },
-    };
-
-    tab.open();
-
-    expect(ensureCommunityPluginUpdateCheck).toHaveBeenCalledTimes(1);
-    expect(getSettingNames()[0]).toBe(t("plugin.updateAvailable"));
-    expect(getSettingDescriptions()).toContain(
-      t("plugin.updateAvailableDesc", { version: "0.0.2" }),
-    );
-
-    const updateButton = getButtonComponents()[0];
-    expect(updateButton?.text).toBe(t("plugin.openCommunityPlugins"));
-    await updateButton?.click();
-    expect(openedSettingTabs).toEqual(["community-plugins"]);
   });
 
   it("shows required plugin updates as a sync blocker", () => {
@@ -154,60 +124,6 @@ describe("SynchSettingTab", () => {
     expect(getButtonComponents().map((button) => button.text)).not.toContain(t("sync.start"));
   });
 
-  it("hides plugin update status from settings when no update is available", () => {
-    const tab = createSettingsTab({
-      getCommunityPluginUpdateStatus: () => ({
-        state: "checking",
-        currentVersion: "0.0.1",
-      }),
-    });
-
-    tab.open();
-
-    expect(getSettingNames()).not.toContain(t("plugin.updateAvailable"));
-
-    resetObsidianMocks();
-    createSettingsTab({
-      getCommunityPluginUpdateStatus: () => ({
-        state: "up_to_date",
-        currentVersion: "0.0.1",
-        latestVersion: "0.0.1",
-      }),
-    }).open();
-
-    expect(getSettingNames()).not.toContain(t("plugin.updateAvailable"));
-
-    resetObsidianMocks();
-    createSettingsTab({
-      getCommunityPluginUpdateStatus: () => ({
-        state: "failed",
-        currentVersion: "0.0.1",
-        error: "offline",
-      }),
-    }).open();
-
-    expect(getSettingNames()).not.toContain(t("plugin.updateAvailable"));
-    expect(getButtonComponents()[0]?.text).toBe(t("auth.signInOnThisDevice"));
-  });
-
-  // The update row does not exist until a check has succeeded, so the check
-  // must not depend on that row being rendered.
-  it("kicks off the plugin update check while the update row is absent", () => {
-    const ensureCommunityPluginUpdateCheck = vi.fn(async () => {});
-    const tab = createSettingsTab({
-      ensureCommunityPluginUpdateCheck,
-      getCommunityPluginUpdateStatus: () => ({
-        state: "idle",
-        currentVersion: "0.0.1",
-      }),
-    });
-
-    tab.open();
-
-    expect(getSettingNames()).not.toContain(t("plugin.updateAvailable"));
-    expect(ensureCommunityPluginUpdateCheck).toHaveBeenCalledTimes(1);
-  });
-
   it("shows an editable self-hosted server URL before sign-in when already configured", async () => {
     const updateApiBaseUrl = vi.fn(async () => {});
     const tab = createSettingsTab({
@@ -217,7 +133,6 @@ describe("SynchSettingTab", () => {
 
     tab.open();
 
-    expect(getToggleComponents()[0]?.value).toBe(true);
     const apiBaseUrlInput = getTextComponents()[0];
     expect(apiBaseUrlInput?.value).toBe("https://api.synch.test");
     expect(apiBaseUrlInput?.disabled).toBe(false);
@@ -278,7 +193,7 @@ describe("SynchSettingTab", () => {
     );
   });
 
-  it("does not show the default API base URL before sign-in", async () => {
+  it("shows the default API base URL before sign-in", async () => {
     const updateApiBaseUrl = vi.fn(async () => {});
     const tab = createSettingsTab({
       getApiBaseUrl: () => "https://api.synch.run",
@@ -287,9 +202,8 @@ describe("SynchSettingTab", () => {
 
     tab.open();
 
-    expect(getToggleComponents()[0]?.value).toBe(false);
-    expect(getTextComponents()).toEqual([]);
-    expect(getButtonComponents().map((button) => button.text)).not.toContain(t("save"));
+    expect(getTextComponents()[0]?.value).toBe("https://api.synch.run");
+    expect(getButtonComponents().map((button) => button.text)).toContain(t("save"));
     expect(updateApiBaseUrl).not.toHaveBeenCalled();
   });
 
@@ -310,31 +224,27 @@ describe("SynchSettingTab", () => {
   });
 
   it.each([
-    ["owner", true, true],
-    ["admin", false, true],
-    ["member", false, false],
-    [null, false, false],
-  ] as const)("limits management settings for organization role %s", (role, subscription, management) => {
-    const ensureSubscriptionStatusCheck = vi.fn(async () => {});
+    ["owner", true],
+    ["admin", true],
+    ["member", false],
+    [null, false],
+  ] as const)("limits management settings for organization role %s", (role, management) => {
     const tab = createSettingsTab({
       hasAuthenticatedSession: () => true,
       hasConnectedRemoteVault: () => true,
       getOrganizationRole: () => role,
-      ensureSubscriptionStatusCheck,
     });
 
     tab.open();
 
-    expect(getSettingNames().includes(t("subscription.label"))).toBe(subscription);
     expect(getSettingNames().includes(t("vault.manage"))).toBe(management);
-    expect(ensureSubscriptionStatusCheck).toHaveBeenCalledTimes(management ? 1 : 0);
     expect(getSettingNames()).toContain(t("sync.label"));
   });
 
   it.each([
     ["https://server.example", true, true],
     ["https://server.example", false, false],
-    ["https://api.synch.run", true, false],
+    ["https://api.synch.run", true, true],
   ] as const)("preserves legacy management for %s only when the API is unavailable (%s)", (url, unavailable, management) => {
     const tab = createSettingsTab({
       hasAuthenticatedSession: () => true,
@@ -347,142 +257,6 @@ describe("SynchSettingTab", () => {
     tab.open();
 
     expect(getSettingNames().includes(t("vault.manage"))).toBe(management);
-    expect(getSettingNames()).not.toContain(t("subscription.label"));
-  });
-
-  it("shows subscription status after vault connection", () => {
-    const ensureSubscriptionStatusCheck = vi.fn(async () => {});
-    const tab = createSettingsTab({
-      hasAuthenticatedSession: () => true,
-      hasConnectedRemoteVault: () => true,
-      ensureSubscriptionStatusCheck,
-    });
-
-    tab.open();
-
-    expect(ensureSubscriptionStatusCheck).toHaveBeenCalledTimes(1);
-    expect(getSettingNames()).toContain(t("subscription.label"));
-    expect(getSettingDescriptions()).toContain(t("subscription.checking"));
-  });
-
-  it("hides subscription settings for custom API servers", () => {
-    const ensureSubscriptionStatusCheck = vi.fn(async () => {});
-    const tab = createSettingsTab({
-      hasAuthenticatedSession: () => true,
-      hasConnectedRemoteVault: () => true,
-      getApiBaseUrl: () => "https://custom.synch.test",
-      ensureSubscriptionStatusCheck,
-    });
-
-    tab.open();
-
-    expect(ensureSubscriptionStatusCheck).not.toHaveBeenCalled();
-    expect(getSettingNames()).not.toContain(t("subscription.label"));
-    expect(getSettingDescriptions()).not.toContain(t("subscription.checking"));
-  });
-
-  it("opens pricing from free subscription settings", async () => {
-    const openPricingPage = vi.fn();
-    const tab = createSettingsTab({
-      hasAuthenticatedSession: () => true,
-      hasConnectedRemoteVault: () => true,
-      getSubscriptionStatus: () => ({
-        state: "loaded",
-        planId: "free",
-        billingInterval: null,
-        active: false,
-        status: "none",
-        cancelAtPeriodEnd: false,
-        periodEnd: null,
-      }),
-      openPricingPage,
-    });
-
-    tab.open();
-
-    expect(getSettingDescriptions()).toContain(t("subscription.freePlan"));
-    const upgradeButton = getButtonComponents().find(
-      (button) => button.text === t("subscription.upgrade"),
-    );
-    await upgradeButton?.click();
-
-    expect(openPricingPage).toHaveBeenCalledTimes(1);
-  });
-
-  it("opens billing management from paid subscription settings", async () => {
-    const openBillingManagementPage = vi.fn();
-    const tab = createSettingsTab({
-      hasAuthenticatedSession: () => true,
-      hasConnectedRemoteVault: () => true,
-      getSubscriptionStatus: () => ({
-        state: "loaded",
-        planId: "starter",
-        billingInterval: "annual",
-        active: true,
-        status: "active",
-        cancelAtPeriodEnd: false,
-        periodEnd: "2026-05-09T00:00:00.000Z",
-      }),
-      openBillingManagementPage,
-    });
-
-    tab.open();
-
-    expect(getSettingDescriptions()).toContain(t("subscription.starterPlan"));
-    const manageButton = getButtonComponents().find(
-      (button) => button.text === t("subscription.manage"),
-    );
-    await manageButton?.click();
-
-    expect(openBillingManagementPage).toHaveBeenCalledTimes(1);
-  });
-
-  it("shows canceling paid subscription period end", () => {
-    const tab = createSettingsTab({
-      hasAuthenticatedSession: () => true,
-      hasConnectedRemoteVault: () => true,
-      getSubscriptionStatus: () => ({
-        state: "loaded",
-        planId: "starter",
-        billingInterval: "monthly",
-        active: true,
-        status: "active",
-        cancelAtPeriodEnd: true,
-        periodEnd: "2026-05-09T00:00:00.000Z",
-      }),
-    });
-
-    tab.open();
-
-    expect(getSettingDescriptions()).toContain(
-      t("subscription.canceling", {
-        plan: t("subscription.starterPlan"),
-        periodEnd: "May 9, 2026",
-      }),
-    );
-  });
-
-  it("can retry failed subscription status checks", async () => {
-    const retrySubscriptionStatusCheck = vi.fn(async () => {});
-    const tab = createSettingsTab({
-      hasAuthenticatedSession: () => true,
-      hasConnectedRemoteVault: () => true,
-      getSubscriptionStatus: () => ({
-        state: "failed",
-        error: "offline",
-      }),
-      retrySubscriptionStatusCheck,
-    });
-
-    tab.open();
-
-    expect(getSettingDescriptions()).toContain(t("subscription.failed"));
-    const refreshButton = getButtonComponents().find(
-      (button) => button.text === t("refresh"),
-    );
-    await refreshButton?.click();
-
-    expect(retrySubscriptionStatusCheck).toHaveBeenCalledTimes(1);
   });
 
   it("disables the self-hosted server URL during device sign-in", async () => {
@@ -495,7 +269,6 @@ describe("SynchSettingTab", () => {
 
     tab.open();
 
-    expect(getToggleComponents()[0]?.disabled).toBe(true);
     const apiBaseUrlInput = getTextComponents()[0];
     const saveButton = getButtonComponents().find((button) => button.text === t("save"));
     expect(apiBaseUrlInput?.disabled).toBe(true);
@@ -517,12 +290,10 @@ describe("SynchSettingTab", () => {
 
     tab.open();
 
-    expect(getToggleComponents()[0]?.disabled).toBe(true);
     const apiBaseUrlInput = getTextComponents()[0];
     const saveButton = getButtonComponents()[1];
     expect(apiBaseUrlInput?.disabled).toBe(true);
     expect(saveButton?.disabled).toBe(true);
-    expect(getSettingDescriptions()[1]).toBe(t("server.descDisconnectVault"));
 
     await apiBaseUrlInput?.change("https://custom.synch.test");
     await saveButton?.click();
@@ -615,12 +386,13 @@ describe("SynchSettingTab", () => {
           state: "pending_network" as const,
           token: "stored-token",
         }),
-        // The network-required row has no render callback; an available
+        // The network-required row has no render callback; a required
         // update keeps this scenario exercising a rendered row.
-        getCommunityPluginUpdateStatus: () => ({
-          state: "update_available" as const,
+        getServerCompatibilityStatus: () => ({
+          state: "update_required" as const,
           currentVersion: "0.0.1",
-          latestVersion: "0.0.2",
+          minVersion: "1.2.0",
+          message: "Update Synch before syncing.",
         }),
       },
     ];

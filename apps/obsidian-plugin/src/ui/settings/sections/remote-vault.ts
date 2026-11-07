@@ -1,5 +1,4 @@
 import { App, Setting } from "obsidian";
-import { getServerDeployment } from "../../../config";
 import { t } from "../../../i18n";
 import type { SynchSettingsController } from "../controller";
 import { DeletedFilesModal } from "../modals";
@@ -13,19 +12,11 @@ export function populateVaultManageSetting(
     .setName(t("vault.manage"))
     .setDesc(t("vault.manageDesc"));
 
-  const subscription = controller.getSubscriptionStatus();
-  if (
-    getServerDeployment(controller.getApiBaseUrl()) === "self_hosted" ||
-    (subscription.state === "loaded" &&
-      subscription.planId === "plus" &&
-      subscription.active)
-  ) {
-    setting.addButton((button) =>
-      button.setButtonText(t("sharing.title")).onClick(() => {
-        void controller.openVaultSharing();
-      }),
-    );
-  }
+  setting.addButton((button) =>
+    button.setButtonText(t("sharing.title")).onClick(() => {
+      void controller.openVaultSharing();
+    }),
+  );
 
   setting.addButton((button) =>
     button.setButtonText(t("vault.manageRemote")).onClick(() => {

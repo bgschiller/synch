@@ -7,7 +7,6 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 
 import { createApiApplication } from "../composition/create-api-application";
-import { NODE_COMMUNITY_PROFILE } from "../config/deployment-profile";
 import { resolveNodeAsset } from "../config/node-assets";
 import { createLibsqlDb } from "../db/client";
 import * as schema from "../db/d1";
@@ -37,10 +36,6 @@ export interface NodeRuntimeConfig {
 	corsOrigin?: string;
 	betterAuthSecret: string;
 	authAllowedEmails: string;
-	googleClientId?: string;
-	googleClientSecret?: string;
-	githubClientId?: string;
-	githubClientSecret?: string;
 	syncTokenSecret: string;
 	syncTokenTtlSeconds?: number;
 	blobStorage: BlobObjectStorage;
@@ -50,17 +45,11 @@ export interface NodeRuntimeConfig {
 
 /**
  * Wires the same portable core (`createApp`, Vault composition,
- * subscription policy use cases, sync-access/blob-transfer features, ...)
- * used on Cloudflare
+ * sync-access/blob-transfer features, ...) used on Cloudflare
  * (`runtime/http.ts`), but entirely with the self-hosted backends built in
  * earlier stages: a libSQL file for the app DB, `NodeCoordinatorNamespace`
  * (one SQLite file per vault) in place of the Durable Object namespace, and
  * caller-supplied blob object storage (disk or S3-compatible) in place of R2.
- *
- * Always self-hosted: billing/Polar stays off (there's no Cloudflare Queue
- * to refresh subscription policy against, and self-hosted vaults get the
- * unlimited `self_hosted` policy tier unconditionally). Email verification is already disabled for
- * self-hosted mode by the auth feature configuration, so no mailer is needed either.
  */
 export async function createNodeRuntime(config: NodeRuntimeConfig) {
 	mkdirSync(config.dataDir, { recursive: true });
@@ -79,8 +68,6 @@ export async function createNodeRuntime(config: NodeRuntimeConfig) {
 		blobStorage: config.blobStorage,
 		syncTokenSecret: config.syncTokenSecret,
 		syncTokenTtlSeconds: config.syncTokenTtlSeconds,
-		profile: NODE_COMMUNITY_PROFILE,
-		productIdsByPlanId: {},
 	});
 	const application = createApiApplication(
 		{
@@ -89,22 +76,15 @@ export async function createNodeRuntime(config: NodeRuntimeConfig) {
 			coordinatorNamespace,
 		},
 		{
-			profile: NODE_COMMUNITY_PROFILE,
 			corsOrigin,
 			auth: {
 				baseURL: config.publicUrl,
 				trustedOrigins: [publicOrigin, corsOrigin],
-				devMode: false,
 				secret: config.betterAuthSecret,
 				allowedEmails: config.authAllowedEmails,
-				googleClientId: config.googleClientId,
-				googleClientSecret: config.googleClientSecret,
-				githubClientId: config.githubClientId,
-				githubClientSecret: config.githubClientSecret,
 			},
 			syncTokenSecret: config.syncTokenSecret,
 			syncTokenTtlSeconds: config.syncTokenTtlSeconds,
-			productIdsByPlanId: {},
 		},
 	);
 

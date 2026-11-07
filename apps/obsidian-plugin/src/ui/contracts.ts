@@ -48,27 +48,6 @@ export interface SynchBlockedSyncFile {
 /** @deprecated Use `SynchBlockedSyncFile`. */
 export type SynchFileSizeBlockedFile = SynchBlockedSyncFile;
 
-export type SynchCommunityPluginUpdateStatus =
-  | {
-      state: "idle" | "checking";
-      currentVersion: string;
-    }
-  | {
-      state: "up_to_date";
-      currentVersion: string;
-      latestVersion: string;
-    }
-  | {
-      state: "update_available";
-      currentVersion: string;
-      latestVersion: string;
-    }
-  | {
-      state: "failed";
-      currentVersion: string;
-      error: string;
-    };
-
 export type SynchServerCompatibilityStatus =
   | {
       state: "idle";
@@ -91,24 +70,6 @@ export type SynchServerCompatibilityStatus =
       minVersion: string;
       apiMajor: number;
       message: string;
-    };
-
-export type SynchSubscriptionStatus =
-  | {
-      state: "idle" | "checking";
-    }
-  | {
-      state: "loaded";
-      planId: "free" | "starter" | "plus" | "self_hosted";
-      billingInterval: "monthly" | "annual" | null;
-      active: boolean;
-      status: string;
-      cancelAtPeriodEnd: boolean;
-      periodEnd: string | null;
-    }
-  | {
-      state: "failed";
-      error: string;
     };
 
 export interface SynchDeletedFile {

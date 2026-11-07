@@ -111,8 +111,6 @@ export const organization = sqliteTable(
     name: text("name").notNull(),
     slug: text("slug").notNull().unique(),
     logo: text("logo"),
-    polarCustomerId: text("polar_customer_id").unique(),
-    syncedVaultsOverride: integer("synced_vaults_override"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     metadata: text("metadata"),
   },

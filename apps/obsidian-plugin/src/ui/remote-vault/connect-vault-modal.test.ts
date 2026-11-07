@@ -17,7 +17,7 @@ const inlineError = (message: string) => getCreatedElements().some((element) =>
 function setup(status: "active" | "revoked" = "active") {
   const item: ConnectableVault = {
     vault: { id: "vault", name: "Team notes", personal: false, canManage: false, status, shared: true, members: [] },
-    organizationName: "Team", sharingEnabled: true,
+    organizationName: "Team",
   };
   const flow = {
     assertCurrentAccount: vi.fn(),
@@ -56,7 +56,6 @@ describe("connect vault onboarding", () => {
 
   it("offers a direct connection on older servers", async () => {
     const { item, open } = setup();
-    item.sharingEnabled = false;
     item.vault.personal = true;
     item.vault.shared = false;
     item.organizationName = "";

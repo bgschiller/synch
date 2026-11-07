@@ -6,14 +6,10 @@ import { cors } from "hono/cors";
 import type { AuthHttpHandler } from "./auth/routes";
 import { registerAuthRoutes } from "./auth/routes";
 import type { SessionReader } from "./auth/session";
-import { registerBillingRoutes } from "./billing/adapters/inbound/http/routes";
-import type { BillingService } from "./billing/application";
-import { mapBillingApplicationError } from "./billing/adapters/inbound/http/error-mapper";
 import { onError } from "./errors";
 import { registerPluginVersionRoutes } from "./plugin-version/routes";
 import { registerRedirectRoutes } from "./redirect/routes";
 import { registerRootRoute } from "./root/routes";
-import type { SubscriptionPolicyReader } from "./subscription/application";
 import type { IssueSyncToken } from "./sync-access/application";
 import { mapSyncAccessApplicationError } from "./sync-access/adapters/inbound/http/error-mapper";
 import { registerSyncAccessRoutes } from "./sync-access/adapters/inbound/http/routes";
@@ -43,8 +39,6 @@ export type AppDependencies = {
 	downloadBlob: DownloadBlob;
 	coordinatorProxyRepository: CoordinatorProxyRepository;
 	vaultService: VaultService;
-	subscriptionPolicyService: SubscriptionPolicyReader;
-	billingService?: BillingService;
 };
 
 export type AppConfig = {
@@ -87,12 +81,6 @@ export function createApp(deps: AppDependencies, config: AppConfig): Hono {
 			trustedOrigins: [new URL(config.authBaseUrl).origin, config.corsOrigin],
 		});
 	registerVaultRoutes(app, deps);
-	if (deps.billingService) {
-		registerBillingRoutes(app, {
-			sessionReader: deps.sessionReader,
-			billingService: deps.billingService,
-		});
-	}
 	registerBlobTransferRoutes(app, {
 		uploadBlob: deps.uploadBlob,
 		downloadBlob: deps.downloadBlob,
@@ -121,7 +109,6 @@ export function createApp(deps: AppDependencies, config: AppConfig): Hono {
 			mapSyncAccessApplicationError(error) ??
 			mapBlobTransferApplicationError(error) ??
 			mapVaultApplicationError(error) ??
-			mapBillingApplicationError(error) ??
 			onError(error, c),
 	);
 

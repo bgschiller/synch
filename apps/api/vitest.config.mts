@@ -15,7 +15,6 @@ export default defineConfig({
 				main: "./src/index.ts",
 				wrangler: {
 					configPath: "./wrangler.jsonc",
-					environment: "managed",
 				},
 				miniflare: {
 					d1Databases: {
@@ -23,13 +22,9 @@ export default defineConfig({
 					},
 					bindings: {
 						BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
-                        POLAR_PLUS_MONTHLY_PRODUCT_ID: "test-plus-monthly",
-						WWW_BASE_URL: process.env.WWW_BASE_URL ?? "http://localhost:4321",
 						BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
 						SYNC_TOKEN_SECRET: process.env.SYNC_TOKEN_SECRET,
-						SELF_HOSTED: false,
-						DEV_MODE: false,
-						AUTH_EMAIL_FROM: "Synch <noreply@example.com>",
+						AUTH_ALLOWED_EMAILS: "@test.invalid",
 						TEST_MIGRATIONS: migrations,
 					},
 				},

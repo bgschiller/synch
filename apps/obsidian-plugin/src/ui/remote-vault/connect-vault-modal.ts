@@ -173,6 +173,6 @@ export class ConnectVaultModal extends Modal {
       });
       return;
     }
-    this.bodyEl.createEl("p", { text: t("sharing.suspended"), cls: "synch-connect-notice" });
+    this.bodyEl.createEl("p", { text: t("vault.remoteAccessUnavailable"), cls: "synch-connect-notice" });
   }
 }

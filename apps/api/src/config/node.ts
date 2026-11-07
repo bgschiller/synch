@@ -14,10 +14,6 @@ const nodeEnvSchema = z.object({
 	PUBLIC_URL: optionalNonBlankString,
 	CORS_ORIGIN: optionalNonBlankString,
 	BETTER_AUTH_SECRET: z.string().trim().min(1, "BETTER_AUTH_SECRET is required"),
-	GOOGLE_CLIENT_ID: optionalNonBlankString,
-	GOOGLE_CLIENT_SECRET: optionalNonBlankString,
-	GITHUB_CLIENT_ID: optionalNonBlankString,
-	GITHUB_CLIENT_SECRET: optionalNonBlankString,
 	AUTH_ALLOWED_EMAILS: z.string().trim().min(1, "AUTH_ALLOWED_EMAILS is required"),
 	SYNC_TOKEN_SECRET: z.string().trim().min(1, "SYNC_TOKEN_SECRET is required"),
 	SYNC_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().optional(),
@@ -53,10 +49,6 @@ export type NodeServerConfig = {
 	corsOrigin?: string;
 	betterAuthSecret: string;
 	authAllowedEmails: string;
-	googleClientId?: string;
-	googleClientSecret?: string;
-	githubClientId?: string;
-	githubClientSecret?: string;
 	syncTokenSecret: string;
 	syncTokenTtlSeconds?: number;
 	blob: NodeBlobConfig;
@@ -80,10 +72,6 @@ export function parseNodeServerConfig(
 		corsOrigin,
 		betterAuthSecret: env.BETTER_AUTH_SECRET,
 		authAllowedEmails: env.AUTH_ALLOWED_EMAILS,
-		googleClientId: env.GOOGLE_CLIENT_ID,
-		googleClientSecret: env.GOOGLE_CLIENT_SECRET,
-		githubClientId: env.GITHUB_CLIENT_ID,
-		githubClientSecret: env.GITHUB_CLIENT_SECRET,
 		syncTokenSecret: env.SYNC_TOKEN_SECRET,
 		syncTokenTtlSeconds: env.SYNC_TOKEN_TTL_SECONDS,
 		blob: parseBlobConfig(env),

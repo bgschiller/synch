@@ -15,7 +15,6 @@ export interface VaultAccessContext {
 export interface ConnectableVault {
   vault: SharingVault;
   organizationName: string;
-  sharingEnabled: boolean;
 }
 
 export interface ConnectVaultFlowDeps extends VaultAccessContext {
@@ -49,7 +48,6 @@ export class ConnectVaultFlow {
         vault: { id: vault.id, name: vault.name, personal: true, shared: false,
           canManage: false, status: "active", members: [] },
         organizationName: "",
-        sharingEnabled: false,
       }));
     }
     this.assertCurrentAccount();
@@ -59,13 +57,11 @@ export class ConnectVaultFlow {
         .map((vault) => ({
           vault,
           organizationName: organization.role === "owner" ? "" : organization.name,
-          sharingEnabled: organization.sharing.enabled,
         })),
     );
   }
 
   async blockingReason(item: ConnectableVault): Promise<string | null> {
-    if (item.vault.shared && !item.sharingEnabled) return t("sharing.suspended");
     // A vault creator owns its grant, including in an organization they joined.
     // Invited admins and members must both start with an empty local vault.
     if (!item.vault.personal && await this.deps.hasExistingFiles()) {

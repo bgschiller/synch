@@ -13,7 +13,7 @@ For small, well-understood changes—such as fixing a bug, correcting a typo, or
 making a focused improvement—feel free to open a pull request directly.
 
 For new features or changes that could significantly affect the user
-experience, API, authentication, encryption, or sync behavior, opening an
+experience, API, authentication, or sync behavior, opening an
 issue first is usually the better choice. It gives us a chance to discuss the
 problem, the desired behavior, and the general direction before you spend time
 implementing something that may not fit the project.
@@ -25,7 +25,7 @@ faith, and we can discuss adjustments or alternatives as part of the review.
 If you are unsure, open an issue or a draft pull request—either is a good way
 to start a conversation.
 
-Changes involving encryption, authentication, vault files, or sync behavior
+Changes involving authentication, vault files, or sync behavior
 deserve extra care. Please avoid including real vault contents, credentials,
 tokens, or other sensitive information in issues and pull requests.
 

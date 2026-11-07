@@ -139,22 +139,10 @@ export function createSettingsTab(
     getSyncIntervalMs: () => 0,
     setSyncIntervalMs: vi.fn(async () => {}),
     syncNow: vi.fn(async () => {}),
-    getCommunityPluginUpdateStatus: () => ({
-      state: "up_to_date",
-      currentVersion: "0.0.1",
-      latestVersion: "0.0.1",
-    }),
-    ensureCommunityPluginUpdateCheck: vi.fn(async () => {}),
-    retryCommunityPluginUpdateCheck: vi.fn(async () => {}),
     getServerCompatibilityStatus: () => ({ state: "idle" }),
     getOrganizationRole: () => "owner",
     isOrganizationRoleApiUnavailable: () => false,
     ensureOrganizationRoleCheck: vi.fn(async () => {}),
-    getSubscriptionStatus: () => ({ state: "idle" }),
-    ensureSubscriptionStatusCheck: vi.fn(async () => {}),
-    retrySubscriptionStatusCheck: vi.fn(async () => {}),
-    openBillingManagementPage: vi.fn(() => {}),
-    openPricingPage: vi.fn(() => {}),
     getStorageStatus: () => null,
     getStorageDisplayState: () =>
       resolveStorageDisplayState(

@@ -21,5 +21,11 @@ export function isEmailAllowed(
 	email: string,
 	allowedEmails: ReadonlySet<string>,
 ): boolean {
-	return allowedEmails.has(normalizeEmail(email));
+	const normalized = normalizeEmail(email);
+	if (allowedEmails.has(normalized)) {
+		return true;
+	}
+	// A bare "@domain" entry allows every address at that domain.
+	const atIndex = normalized.indexOf("@");
+	return atIndex >= 0 && allowedEmails.has(normalized.slice(atIndex));
 }

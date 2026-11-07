@@ -4,7 +4,6 @@ Synch is an Obsidian Sync alternative. The repository is a pnpm workspace with:
 
 - `apps/api`: Cloudflare Workers API, Hono, Drizzle, Better Auth.
 - `apps/obsidian-plugin`: Obsidian plugin client.
-- `apps/www`: Astro website.
 - `packages/*`: shared workspace packages.
 
 Prioritize vault safety and compatibility with Obsidian plugin behavior.
@@ -42,6 +41,4 @@ pnpm -C apps/obsidian-plugin lint
 pnpm -C apps/obsidian-plugin build
 
 pnpm -C packages/sync-client test --run
-
-pnpm -C apps/www build
 ```

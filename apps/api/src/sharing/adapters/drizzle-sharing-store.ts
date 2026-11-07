@@ -208,11 +208,7 @@ export class DrizzleSharingStore implements SharingStore {
       INSERT INTO invitation (id, organization_id, email, role, status, expires_at, created_at, inviter_id)
       SELECT ${id}, ${input.organizationId}, ${input.email}, ${input.role}, 'pending', ${expires}, ${now}, ${input.inviterId}
       WHERE NOT EXISTS (SELECT 1 FROM invitation WHERE organization_id=${input.organizationId} AND lower(email)=${input.email} AND status='pending' AND expires_at>${now})
-      AND NOT EXISTS (SELECT 1 FROM member JOIN user ON user.id=member.user_id WHERE member.organization_id=${input.organizationId} AND lower(user.email)=${input.email})
-      AND (${input.memberLimit}=0 OR (
-        (SELECT count(*) FROM member WHERE organization_id=${input.organizationId}) +
-        (SELECT count(*) FROM invitation WHERE organization_id=${input.organizationId} AND status='pending' AND expires_at>${now})
-      ) < ${input.memberLimit}) RETURNING id`);
+      AND NOT EXISTS (SELECT 1 FROM member JOIN user ON user.id=member.user_id WHERE member.organization_id=${input.organizationId} AND lower(user.email)=${input.email}) RETURNING id`);
 		if (!rows.length) return null;
 		return this.invitation(id);
 	}

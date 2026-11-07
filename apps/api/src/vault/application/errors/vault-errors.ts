@@ -1,6 +1,5 @@
 export type VaultApplicationErrorCode =
 	| "organization_required"
-	| "vault_limit_exceeded"
 	| "vault_name_exists"
 	| "forbidden"
 	| "not_found"

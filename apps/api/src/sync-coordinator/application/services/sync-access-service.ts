@@ -15,11 +15,9 @@ export type VaultAccessDecision =
 	| { ok: true }
 	| { ok: false; status: 403 | 503; code: string; message: string };
 export type SyncAccessSnapshot = {
-	suspended: boolean;
 	grants: { userId: string; accessVersion: number }[];
 };
 
-const VAULT_SUSPENSION_KEY = "vault";
 const userRevocationKey = (userId: string) => `user:${userId}`;
 
 /** D1 is read only when an access change or subscription webhook reaches this vault. */
@@ -83,16 +81,6 @@ export class CoordinatorSyncAccessService {
 						expiresAt: Math.max(expiresAt, previous?.expiresAt ?? 0),
 					});
 				}
-				if (snapshot.suspended) {
-					this.store.writeRevocation({
-						key: VAULT_SUSPENSION_KEY,
-						minimumVersion: null,
-						expiresAt,
-					});
-				} else {
-					// Renewal clears only the vault-wide block, never a user's revocation.
-					this.store.deleteRevocation(VAULT_SUSPENSION_KEY);
-				}
 			} finally {
 				// Reload even after a partial persistence failure; never keep a stale cache.
 				this.revocations = undefined;
@@ -124,9 +112,6 @@ export class CoordinatorSyncAccessService {
 	}
 
 	private denial(userId: string, version: number): SharingError | null {
-		if (this.revocations?.has(VAULT_SUSPENSION_KEY)) {
-			return new SharingError(403, "sharing_suspended", "Shared vault sync is paused until the organization renews Sync Plus");
-		}
 		const revoked = this.revocations?.get(userRevocationKey(userId));
 		if (revoked?.minimumVersion != null && version < revoked.minimumVersion) {
 			return new SharingError(403, "vault_access_denied", "This sync session is no longer authorized");

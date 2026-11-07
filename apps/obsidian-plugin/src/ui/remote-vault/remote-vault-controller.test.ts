@@ -47,7 +47,7 @@ describe("SynchRemoteVaultController", () => {
     controller.openRemoteVaultManagementPage();
 
     expect(open).toHaveBeenCalledWith(
-      "https://api.synch.run/vaults?lang=ko",
+      "https://api.synch.run/vaults?lang=en",
       "_external",
       "noopener,noreferrer",
     );
@@ -76,7 +76,7 @@ function connectionFixture(role: "owner" | "member", files: string[]) {
     getStoredRemoteVaultId: () => null,
     createVaultAccessContext: vi.fn(async () => ({
       manager: { client: { organizations: async () => [{
-        name: "Team", sharing: { enabled: true },
+        name: "Team",
         vaults: [{ id: "vault", name: "Notes", personal: role === "owner", canManage: role === "owner", status: "active", shared: role !== "owner" }],
       }] } } as unknown as SharingManager,
       isCurrentAccount: () => true,

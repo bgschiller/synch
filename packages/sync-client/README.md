@@ -1,10 +1,10 @@
 # `@synch/sync-client`
 
 Platform-independent client primitives for Synch. This package owns the
-end-to-end encryption model, sync protocol, reconciliation and push/pull
-services, realtime loop, storage contracts, vault filesystem contracts,
-session managers (auth / remote vault), billing status client, shared
-sync status helpers, and the host-agnostic SyncEngine façade.
+sync protocol, reconciliation and push/pull services, realtime loop,
+storage contracts, vault filesystem contracts, session managers (auth /
+remote vault), billing status client, shared sync status helpers, and the
+host-agnostic SyncEngine façade.
 
 It deliberately does not depend on Obsidian, Dexie, Node.js filesystem APIs,
 or an operating-system credential store. A host application supplies those
@@ -15,19 +15,18 @@ capabilities through the exported ports:
 - `SyncVaultAdapter` for scanning and safely changing vault files.
 - `SyncVaultConfigSource` and `SyncChangeSource` for config listing and
   local change watching.
-- Authentication tokens and the in-memory remote vault key.
-- Credential persistence for auth session tokens and vault key bytes
-  (session managers live here; persistence stays in the host).
+- Authentication tokens.
+- Credential persistence for auth session tokens (session managers live
+  here; persistence stays in the host).
 
 The Obsidian host keeps its Dexie, `requestUrl`, vault event, SecretStorage,
 and UI adapters under `apps/obsidian-plugin`.
 
 The headless CLI keeps process locking and credential persistence
 in its Node host layer. It must acquire an exclusive lock for a vault before
-opening its sync store or starting file watching, and it must not persist the
-remote vault key through this package. The reserved `.synch` path is excluded
-from synchronization and is suitable for non-secret, vault-local CLI state;
-credentials should live outside the vault or in an encrypted host-managed
+opening its sync store or starting file watching. The reserved `.synch` path is
+excluded from synchronization and is suitable for non-secret, vault-local CLI
+state; credentials should live outside the vault or in a host-managed secure
 store.
 
 Host applications import from explicit package entry points; paths under
@@ -42,7 +41,6 @@ Host applications import from explicit package entry points; paths under
 | `@synch/sync-client/vault` | Vault filesystem ports and safe write helpers |
 | `@synch/sync-client/remote` | Remote vault management, sync access tokens and host-facing protocol types |
 | `@synch/sync-client/auth` | Authentication client, session manager and token storage port |
-| `@synch/sync-client/billing` | Billing status client |
 | `@synch/sync-client/http` | HTTP port and network status helpers |
 | `@synch/sync-client/diagnostics` | Diagnostic events, in-memory collection and formatting |
 | `@synch/sync-client/testing` | In-memory store and vault adapters for host tests |
@@ -65,7 +63,7 @@ and accepted-push validation remain responsible for durable atomic updates.
 Prepare network payloads and acquire content reservations outside state work.
 Optimistic preparations watch for changes to their resources, then validate
 under the same keys before applying. A stale plan is rebuilt (including merge
-and metadata encryption), with at most three attempts before returning to the
+and metadata re-encoding), with at most three attempts before returning to the
 normal retry policy. Pull also checks local file snapshots, and retains
 completed groups as ownership context so a retry does not apply them twice.
 This coordinates one store instance in one runtime; hosts must still enforce

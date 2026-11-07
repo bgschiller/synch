@@ -1,10 +1,5 @@
 import { logServerError } from "./errors";
-import {
-	createQueueConsumer,
-	createRuntimeApp,
-	runScheduledTasks,
-} from "./runtime";
-import type { QueueMessage } from "./runtime";
+import { createRuntimeApp, runScheduledTasks } from "./runtime";
 export { SyncCoordinator } from "./sync-coordinator/adapters/inbound/durable-object-rpc/sync-coordinator";
 
 export default {
@@ -22,10 +17,7 @@ export default {
 			);
 		}
 	},
-	async queue(batch, env): Promise<void> {
-		await createQueueConsumer(env).handleBatch(batch);
-	},
 	async scheduled(controller, env): Promise<void> {
-		await runScheduledTasks(env, controller.cron, controller.scheduledTime);
+		await runScheduledTasks(env, controller.cron);
 	},
-} satisfies ExportedHandler<Env, QueueMessage>;
+} satisfies ExportedHandler<Env>;

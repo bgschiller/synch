@@ -11,7 +11,7 @@ import {
 import { apiRequest, issueSyncToken, signUpAccount, signUpAndCreateVault } from "../helpers/api";
 
 describe("scheduled sharing refresh", () => {
-	it.each([true, false])("retries durable revocations without a management request (self-hosted=%s)", async (selfHosted) => {
+	it("retries durable revocations without a management request", async () => {
 		const owner = await signUpAndCreateVault();
 		const member = await signUpAccount();
 		const db = createDb(env.DB);
@@ -39,7 +39,7 @@ describe("scheduled sharing refresh", () => {
 			const tasks = await store.refreshes();
 			expect(tasks).toHaveLength(1);
 			// No purge binding: frequent retries must not invoke vault retention.
-			const scheduledEnv = { ...env, SELF_HOSTED: selfHosted, VAULT_PURGE_QUEUE: undefined };
+			const scheduledEnv = { ...env };
 			await runScheduledTasks({
 				...scheduledEnv,
 				SYNC_COORDINATOR: {

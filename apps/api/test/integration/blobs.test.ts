@@ -2,7 +2,6 @@ import { runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 
-import { getSubscriptionPlanPolicy } from "../../src/subscription/domain/policy";
 import {
 	apiRequest,
 	initializeCoordinatorState,
@@ -125,26 +124,6 @@ describe("blob integration", () => {
 			},
 		);
 		expect(missing.status).toBe(404);
-	});
-
-	it("rejects uploads above the free plan file size limit", async () => {
-		const primary = await signUpAndCreateVault();
-		const freePolicy = getSubscriptionPlanPolicy("free");
-		await initializeCoordinatorState(primary.vaultId, freePolicy.limits);
-		const token = await issueSyncToken(primary.sessionCookie, primary.vaultId, "size-limit-device");
-		const blobId = uniqueId("blob");
-		const payload = new TextEncoder().encode("small body");
-
-		const rejected = await apiRequest(`/v1/vaults/${encodeURIComponent(primary.vaultId)}/blobs/${blobId}`, {
-			method: "PUT",
-			headers: {
-				authorization: `Bearer ${token.token}`,
-				"x-blob-size": String(freePolicy.limits.maxFileSizeBytes + 1),
-			},
-			body: payload,
-		});
-
-		expect(rejected.status).toBe(413);
 	});
 
 	it("rejects uploads whose declared size does not match R2's stored size", async () => {

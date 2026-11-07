@@ -144,7 +144,6 @@ export async function signUpAccount(
 	const name = overrides.name ?? "Synch Vitest";
 	const selfHostedTestEnv = {
 		...env,
-		SELF_HOSTED: true,
 		AUTH_ALLOWED_EMAILS: email,
 	};
 

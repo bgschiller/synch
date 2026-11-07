@@ -3997,7 +3997,8 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20260722.1':
     optional: true
 
-  '@cloudflare/workers-types@5.20260727.1': {}
+  '@cloudflare/workers-types@5.20260727.1':
+    optional: true
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -5774,7 +5775,8 @@ snapshots:
     dependencies:
       is-inside-container: 1.0.0
 
-  jiti@2.7.0: {}
+  jiti@2.7.0:
+    optional: true
 
   jose@6.2.10: {}
 
@@ -6136,7 +6138,8 @@ snapshots:
       tar-fs: 2.1.5
       tunnel-agent: 0.6.0
 
-  prettier@3.8.3: {}
+  prettier@3.8.3:
+    optional: true
 
   pretty-format@27.5.1:
     dependencies:
@@ -6501,7 +6504,8 @@ snapshots:
 
   typescript@5.9.3: {}
 
-  undici-types@6.21.0: {}
+  undici-types@6.21.0:
+    optional: true
 
   undici-types@7.19.2: {}
 

@@ -9,7 +9,6 @@ import { ConnectVaultFlow } from "./connect-vault-flow";
 function setup() {
   const organization: SharingOrganization = {
     id: "org", name: "Team", role: "member",
-    sharing: { enabled: true, memberLimit: 3 },
     vaults: [{ id: "vault", name: "Notes", personal: false, canManage: false, status: "active", shared: true, members: [] }],
   };
   const manager = {
@@ -38,7 +37,6 @@ describe("vault connection safety", () => {
     deps.hasExistingFiles.mockResolvedValue(true);
     deps.confirmPersonalVault.mockResolvedValue(confirmed);
     expect(await flow.list()).toEqual([expect.objectContaining({
-      sharingEnabled: false,
       vault: expect.objectContaining({ id: "legacy", personal: true, status: "active" }),
     })]);
     await expect(flow.connect("legacy")).resolves.toBe(confirmed);
@@ -135,13 +133,5 @@ describe("vault connection safety", () => {
     vault.status = "revoked";
     organization.vaults.push({ ...vault, id: "unassigned", status: null });
     expect(await flow.list()).toEqual([]);
-  });
-
-  it("blocks suspended shared vaults even for their owner", async () => {
-    const { flow, deps, organization, vault } = setup();
-    organization.sharing.enabled = false;
-    vault.personal = true;
-    await expect(flow.connect("vault")).rejects.toThrow(t("sharing.suspended"));
-    expect(deps.bootstrap).not.toHaveBeenCalled();
   });
 });

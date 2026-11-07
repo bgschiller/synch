@@ -9,7 +9,7 @@ export function mapVaultApplicationError(error: unknown): Response | undefined {
 	}
 
 	const vaultError = error;
-	const message = vaultErrorMessage(vaultError.code, vaultError.details);
+	const message = vaultErrorMessage(vaultError.code);
 	const status = vaultErrorStatus(vaultError.code);
 	return new Response(
 		JSON.stringify({ error: vaultError.code, message }, null, 2),
@@ -37,7 +37,6 @@ function vaultErrorStatus(code: VaultApplicationErrorCode): 400 | 403 | 404 | 40
 		case "not_organization_member":
 		case "vault_already_in_organization":
 			return 400;
-		case "vault_limit_exceeded":
 		case "forbidden":
 			return 403;
 		case "not_found":
@@ -47,15 +46,10 @@ function vaultErrorStatus(code: VaultApplicationErrorCode): 400 | 403 | 404 | 40
 	}
 }
 
-function vaultErrorMessage(
-	code: VaultApplicationErrorCode,
-	details: Record<string, unknown>,
-): string {
+function vaultErrorMessage(code: VaultApplicationErrorCode): string {
 	switch (code) {
 		case "organization_required":
 			return "user has no organization";
-		case "vault_limit_exceeded":
-			return `${String(details.planName)} allows ${String(details.limit)} synced vault`;
 		case "vault_name_exists":
 			return "a vault with this name already exists in the organization";
 		case "forbidden":

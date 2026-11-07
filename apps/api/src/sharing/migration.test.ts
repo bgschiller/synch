@@ -2,7 +2,6 @@ import { createLibsqlDb } from "../db/client";
 import * as schema from "../db/d1";
 import { DrizzleSharingStore } from "./adapters/drizzle-sharing-store";
 import { SharingService } from "./application/service";
-import { getSubscriptionPlanPolicy } from "../subscription/domain/policy";
 import { readMigrationFiles } from "drizzle-orm/migrator";
 import { createClient } from "@libsql/client";
 import { fileURLToPath } from "node:url";
@@ -125,7 +124,7 @@ it("auto-enrolls members and drops key ceremony tables without touching other st
 		// 0009 queues access refreshes for every vault so coordinators re-read
 		// the newly-enrolled memberships.
 		expect((await store.refreshes()).map(task => task.vaultId).sort()).toEqual(["personal", "shared", "unassigned"]);
-		const service = new SharingService(store, { readOrganizationPolicy: async () => getSubscriptionPlanPolicy("self_hosted") }, { refreshSharingAccess: async () => {} }, { baseURL: "https://example.com", requireVerifiedEmail: true });
+		const service = new SharingService(store, { refreshSharingAccess: async () => {} }, { baseURL: "https://example.com", requireVerifiedEmail: true });
 		expect((await service.organization("existing", "org")).vaults.map(v => [v.id, v.status])).toEqual([["shared", "active"], ["unassigned", "active"]]);
 		await expect(service.organization("outsider", "org")).rejects.toMatchObject({ code: "forbidden" });
 		await service.resend("owner", "org", "pending");

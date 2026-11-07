@@ -10,7 +10,6 @@ export type RuntimeTestEnv = Omit<
 	EMAIL?: SendEmail;
 	AUTH_EMAIL_FROM?: string;
 	DEV_MODE?: boolean | string;
-	WWW_BASE_URL?: string;
 };
 
 export function expectDeviceVerificationUrl(value: string | undefined): URL {

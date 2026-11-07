@@ -38,7 +38,6 @@ export interface SharingOrganization {
   id: string;
   name: string;
   role: SharingRole;
-  sharing: { enabled: boolean; memberLimit: number };
   vaults: SharingVault[];
 }
 

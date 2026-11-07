@@ -31,7 +31,7 @@ export function registerSharingRoutes(
 	api.use("*", async (c, next) => {
 		const writesUserData =
 			sharingPath(c.req.path) ||
-			/^\/v1\/(vaults(?:\/[^/]+(?:\/password-wrapper)?)?|billing(?:\/[^/]+)?)$/.test(
+			/^\/v1\/vaults(?:\/[^/]+(?:\/password-wrapper)?)?$/.test(
 				c.req.path,
 			);
 		if (

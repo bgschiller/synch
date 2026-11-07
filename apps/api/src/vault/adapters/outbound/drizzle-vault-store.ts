@@ -1,13 +1,9 @@
 import { VaultApplicationError } from "../../application/errors/vault-errors";
-import { and, asc, eq, gt, isNotNull, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 
 import type { AppDb } from "../../../db/client";
 import * as schema from "../../../db/d1";
-import type {
-	InactiveVaultCandidate,
-	VaultBootstrapRecord,
-	VaultRecord,
-} from "../../domain/types";
+import type { VaultBootstrapRecord, VaultRecord } from "../../domain/types";
 import type {
 	VaultAuthorizationFacts,
 	VaultAuthorizationStore,
@@ -176,7 +172,6 @@ export class DrizzleVaultStore
 		userId: string,
 		organizationId: string,
 		name: string,
-		maxVaults = 0,
 	): Promise<VaultRecord> {
 		const vaultId = crypto.randomUUID();
 		const now = Date.now();
@@ -187,8 +182,7 @@ export class DrizzleVaultStore
 				.insert(schema.vault)
 				.select(
 					sql`SELECT ${vaultId}, ${organizationId}, ${name}, CASE WHEN (SELECT count(*) FROM member WHERE organization_id=${organizationId})>1 THEN ${now} ELSE null END, 1, ${now}, null, null, null
-          WHERE (${maxVaults}=0 OR (SELECT count(*) FROM vault WHERE organization_id=${organizationId} AND deleted_at IS NULL)<${maxVaults})
-          AND EXISTS (SELECT 1 FROM member WHERE organization_id=${organizationId} AND user_id=${userId} AND role IN ('owner','admin'))`,
+          WHERE EXISTS (SELECT 1 FROM member WHERE organization_id=${organizationId} AND user_id=${userId} AND role IN ('owner','admin'))`,
 				)
 				.returning(),
 			// Vault access follows organization membership: enroll every member (the
@@ -200,10 +194,7 @@ export class DrizzleVaultStore
 				),
 		]);
 		if (!rows[0])
-			throw new VaultApplicationError("vault_limit_exceeded", {
-				planName: "Organization",
-				limit: maxVaults,
-			});
+			throw new VaultApplicationError("forbidden");
 		return toVaultRecord(rows[0]);
 	}
 
@@ -223,7 +214,6 @@ export class DrizzleVaultStore
 		userId: string,
 		vaultId: string,
 		targetOrganizationId: string,
-		maxVaults = 0,
 	): Promise<VaultRecord> {
 		const now = Date.now();
 		const [rows] = await this.db.batch([
@@ -237,7 +227,6 @@ export class DrizzleVaultStore
 					and(
 						eq(schema.vault.id, vaultId),
 						isNull(schema.vault.deletedAt),
-						sql`(${maxVaults}=0 OR (SELECT count(*) FROM vault WHERE organization_id=${targetOrganizationId} AND deleted_at IS NULL)<${maxVaults})`,
 						sql`EXISTS (SELECT 1 FROM member WHERE organization_id=${targetOrganizationId} AND user_id=${userId} AND role IN ('owner','admin'))`,
 					),
 				)
@@ -254,10 +243,7 @@ export class DrizzleVaultStore
 				),
 		]);
 		if (!rows[0])
-			throw new VaultApplicationError("vault_limit_exceeded", {
-				planName: "Organization",
-				limit: maxVaults,
-			});
+			throw new VaultApplicationError("forbidden");
 		return toVaultRecord(rows[0]);
 	}
 
@@ -325,51 +311,6 @@ export class DrizzleVaultStore
 			.returning({ id: schema.vault.id });
 
 		return claimed.length > 0;
-	}
-
-	/**
-	 * Owner-held vaults whose newest content commit (or creation, when nothing
-	 * was ever committed) is at or before `inactiveSince`.
-	 */
-	async listInactiveVaultCandidates(
-		inactiveSince: number,
-		afterVaultId: string | null,
-		limit: number,
-	): Promise<InactiveVaultCandidate[]> {
-		const rows = await this.db
-			.select({
-				vaultId: schema.vault.id,
-				organizationId: schema.vault.organizationId,
-				vaultName: schema.vault.name,
-				ownerEmail: schema.user.email,
-				lastCommitAt: schema.vaultSyncStatus.lastCommitAt,
-			})
-			.from(schema.vault)
-			.innerJoin(
-				schema.member,
-				eq(schema.member.organizationId, schema.vault.organizationId),
-			)
-			.innerJoin(schema.user, eq(schema.user.id, schema.member.userId))
-			.leftJoin(
-				schema.vaultSyncStatus,
-				eq(schema.vaultSyncStatus.vaultId, schema.vault.id),
-			)
-			.where(
-				and(
-					isNull(schema.vault.deletedAt),
-					isNull(schema.vault.sharedAt),
-					eq(schema.member.role, "owner"),
-					lte(
-						sql`coalesce(${schema.vaultSyncStatus.lastCommitAt}, ${schema.vault.createdAt})`,
-						inactiveSince,
-					),
-					afterVaultId ? gt(schema.vault.id, afterVaultId) : undefined,
-				),
-			)
-			.orderBy(asc(schema.vault.id))
-			.limit(limit);
-
-		return rows;
 	}
 
 	async markVaultPurgeRunning(vaultId: string): Promise<void> {

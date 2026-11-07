@@ -1,4 +1,3 @@
-import type { SubscriptionPolicyReader } from "../../../subscription/application";
 import {
 	canAccessVault,
 	canManageVault,
@@ -22,7 +21,6 @@ export class VaultApplicationService implements VaultService {
 		private readonly catalogStore: VaultCatalogStore,
 		private readonly keyStore: VaultKeyStore,
 		private readonly lifecycleStore: VaultLifecycleStore,
-		private readonly policyReader: SubscriptionPolicyReader,
 		private readonly purgeQueue: VaultPurgeQueue,
 		private readonly canCreateInOrganization?: (userId: string, organizationId: string) => Promise<boolean>,
 	) {}
@@ -45,18 +43,6 @@ export class VaultApplicationService implements VaultService {
 		}
 
 		if (this.canCreateInOrganization && !await this.canCreateInOrganization(userId, organizationId)) throw new VaultApplicationError("forbidden");
-		const policy = await this.policyReader.readOrganizationPolicy(organizationId);
-		const existingVaultCount =
-			await this.catalogStore.countVaultsForOrganization(organizationId);
-		if (
-			policy.limits.syncedVaults > 0 &&
-			existingVaultCount >= policy.limits.syncedVaults
-		) {
-			throw new VaultApplicationError("vault_limit_exceeded", {
-				planName: policy.name,
-				limit: policy.limits.syncedVaults,
-			});
-		}
 
 		if (
 			await this.catalogStore.vaultNameExistsForOrganization(
@@ -71,7 +57,6 @@ export class VaultApplicationService implements VaultService {
 			userId,
 			organizationId,
 			name,
-            policy.limits.syncedVaults,
 		);
 	}
 
@@ -100,19 +85,6 @@ export class VaultApplicationService implements VaultService {
 			throw new VaultApplicationError("forbidden");
 		}
 
-		const policy = await this.policyReader.readOrganizationPolicy(targetOrganizationId);
-		const existingVaultCount =
-			await this.catalogStore.countVaultsForOrganization(targetOrganizationId);
-		if (
-			policy.limits.syncedVaults > 0 &&
-			existingVaultCount >= policy.limits.syncedVaults
-		) {
-			throw new VaultApplicationError("vault_limit_exceeded", {
-				planName: policy.name,
-				limit: policy.limits.syncedVaults,
-			});
-		}
-
 		if (
 			await this.catalogStore.vaultNameExistsForOrganization(
 				targetOrganizationId,
@@ -126,7 +98,6 @@ export class VaultApplicationService implements VaultService {
 			userId,
 			vaultId,
 			targetOrganizationId,
-			policy.limits.syncedVaults,
 		);
 	}
 

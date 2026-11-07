@@ -1,8 +1,7 @@
 import { vaultEnrollmentStatus } from "../../vault/domain/policy";
 import type { EmailSender } from "../../auth/better-auth";
 import { MAX_ORGANIZATIONS_PER_USER } from "../../auth/policies/organization";
-import type { SubscriptionPolicyReader } from "../../subscription/application";
-import { organizationSharingPolicy } from "../../subscription/domain/policy";
+import { isEmailAllowed, parseAllowedEmails } from "../../auth/policies/allowed-emails";
 import type { SharingStore } from "./store";
 import { flushSharingRefreshes, type SharingInvalidator } from "./refresh";
 export type { SharingInvalidator } from "./refresh";
@@ -13,7 +12,6 @@ import {
 
 export type SharingConfig = {
 	baseURL: string;
-	billingBaseURL?: string;
 	requireVerifiedEmail: boolean;
 	email?: EmailSender;
 	emailFrom?: string;
@@ -23,18 +21,12 @@ export type SharingConfig = {
 export class SharingService {
 	constructor(
 		private readonly store: SharingStore,
-		private readonly policy: SubscriptionPolicyReader,
 		private readonly invalidator: SharingInvalidator,
 		private readonly config: SharingConfig,
 	) {}
 
 	async listOrganizations(userId: string) {
-		return Promise.all(
-			(await this.store.organizations(userId)).map(async (org) => ({
-				...org,
-				plan: await this.policy.readOrganizationPolicy(org.id),
-			})),
-		);
+		return this.store.organizations(userId);
 	}
 	async createOrganization(userId: string, name: string) {
 		const trimmed = name.trim();
@@ -62,22 +54,10 @@ export class SharingService {
 		if (!member || (manage && !isManager(member.role))) forbidden();
 		return member;
 	}
-	async requireSharing(organizationId: string) {
-		const plan = await this.policy.readOrganizationPolicy(organizationId);
-		const sharing = organizationSharingPolicy(plan.id);
-		if (!sharing.enabled)
-			throw new SharingError(
-				403,
-				"sharing_unavailable",
-				"Organization sharing requires Sync Plus",
-			);
-		return sharing;
-	}
 	async organization(userId: string, organizationId: string) {
 		const actor = await this.requireOrganization(userId, organizationId);
-		const [organization, plan, members, vaults] = await Promise.all([
+		const [organization, members, vaults] = await Promise.all([
 			this.store.organization(organizationId),
-			this.policy.readOrganizationPolicy(organizationId),
 			this.store.members(organizationId),
 			this.store.vaults(organizationId),
 		]);
@@ -105,16 +85,8 @@ export class SharingService {
 		await this.flushRefreshes();
 		return {
 			id: organizationId,
-			billingUrl: this.config.billingBaseURL
-				? new URL(
-						`/billing?organizationId=${encodeURIComponent(organizationId)}`,
-						this.config.billingBaseURL,
-					).toString()
-				: null,
 			name: organization!.name,
 			role: actor.role,
-			plan,
-			sharing: organizationSharingPolicy(plan.id),
 			members: manage ? members : members.filter((m) => m.id === userId),
 			vaults: visibleVaults,
 			invitations: manage ? await this.store.invitations(organizationId) : [],
@@ -136,13 +108,9 @@ export class SharingService {
 			true,
 		);
 		if (input.role === "admin" && inviter.role !== "owner") forbidden();
-		const policy = await this.requireSharing(organizationId);
 		const email = input.email.trim().toLowerCase();
-		const allowed = this.config.allowedEmails
-			?.split(",")
-			.map((v) => v.trim().toLowerCase())
-			.filter(Boolean);
-		if (allowed?.length && !allowed.includes(email))
+		const allowed = parseAllowedEmails(this.config.allowedEmails);
+		if (allowed && !isEmailAllowed(email, allowed))
 			throw new SharingError(
 				400,
 				"email_not_allowed",
@@ -153,7 +121,6 @@ export class SharingService {
 			email,
 			role: input.role,
 			inviterId: actor.id,
-			memberLimit: policy.memberLimit,
 		});
 		if (!invitation)
 			throw new SharingError(
@@ -192,7 +159,6 @@ export class SharingService {
 	}
 	async resend(userId: string, organizationId: string, id: string) {
 		await this.requireOrganization(userId, organizationId, true);
-		await this.requireSharing(organizationId);
 		const invite = await this.store.invitation(id);
 		if (
 			!invite ||
@@ -256,7 +222,6 @@ export class SharingService {
 			await this.store.setInvitationStatus(id, "rejected");
 			return { organizationId: invite.organizationId };
 		}
-		await this.requireSharing(invite.organizationId);
 		const inviter = await this.requireOrganization(
 			invite.inviterId,
 			invite.organizationId,

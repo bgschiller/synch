@@ -6,11 +6,6 @@ import { CoordinatorSyncAccessService, type VerifiedVaultAccess } from "../sync-
 import { SqliteSyncAccessStore } from "../sync-coordinator/adapters/outbound/sqlite/sync-access-store";
 import { DEFAULT_SYNC_TOKEN_TTL_SECONDS } from "../sync-access/domain/token-policy";
 import { SqliteCoordinatorUnitOfWork } from "../sync-coordinator/adapters/outbound/sqlite/unit-of-work";
-import {
-	isCommunityEdition,
-	type DeploymentProfile,
-} from "../config/deployment-profile";
-import { createSubscriptionFeature } from "./features/create-subscription-feature";
 import { createVaultOrganizationReader } from "./features/create-vault-feature";
 import { createSyncTokenFeature } from "./features/create-sync-access-feature";
 import {
@@ -18,7 +13,6 @@ import {
 	blobObjectKeyPrefix,
 } from "../platform/blob/object-key";
 import type { AppDb } from "../db/client";
-import type { SubscriptionProductIdsByPlanId } from "../subscription/application";
 import { SyncCoordinatorApplicationError } from "../sync-coordinator/application/errors/coordinator-errors";
 import { DEFAULT_BLOB_GRACE_PERIOD_MS } from "../sync-coordinator/domain/blob-gc-policy";
 import { DEFAULT_CURSOR_ACTIVE_TTL_MS } from "../sync-coordinator/domain/health-policy";
@@ -65,8 +59,6 @@ export type CoordinatorApplicationDependencies = {
 };
 
 export type CoordinatorApplicationConfig = {
-	profile: DeploymentProfile;
-	productIdsByPlanId: SubscriptionProductIdsByPlanId;
 	syncTokenSecret: string;
 	syncTokenTtlSeconds?: number;
 	blobGracePeriodMs?: number;
@@ -88,14 +80,10 @@ export function createCoordinatorApplication(
 		deps.storageHandle,
 		deps.socketCounter,
 	);
-	const subscriptionFeature = createSubscriptionFeature(deps.db, {
-		selfHosted: isCommunityEdition(config.profile),
-		productIdsByPlanId: config.productIdsByPlanId,
-	});
 	const vaultOrganizationReader = createVaultOrganizationReader(deps.db);
 	const syncStatusRepository = new VaultSyncStatusRepository(deps.db);
 	const sharingStore = new DrizzleSharingStore(deps.db);
-	const sharingAccess = new SharingAccess(sharingStore, subscriptionFeature.policyReader);
+	const sharingAccess = new SharingAccess(sharingStore);
 	const syncAccess = new CoordinatorSyncAccessService(
 		new SqliteSyncAccessStore(deps.storageHandle),
 		deps.socketGateway,
@@ -104,7 +92,6 @@ export function createCoordinatorApplication(
 			if (!vault) throw new Error("Vault not found while refreshing sync access");
 			return {
 				grants: await sharingStore.accessVersions(vaultId),
-				suspended: await sharingAccess.isSuspended(vaultId),
 			};
 		},
 		Math.max(
@@ -141,7 +128,7 @@ export function createCoordinatorApplication(
 		objectKeyBuilder,
 		deps.maintenanceScheduler,
 		healthService,
-		async (vaultId) => !(await sharingAccess.isSuspended(vaultId)),
+		async () => true,
 	);
 	const blobService = new BlobService(
 		syncTokenService,
@@ -184,11 +171,11 @@ export function createCoordinatorApplication(
 					});
 				}
 
-				const policy =
-					await subscriptionFeature.policyReader.readOrganizationPolicy(
-						organizationId,
-					);
-				return policy.limits;
+				return {
+					storageLimitBytes: 0,
+					maxFileSizeBytes: 0,
+					versionHistoryRetentionDays: 1,
+				};
 			},
 		},
 		healthService,
@@ -247,8 +234,7 @@ export function createCoordinatorApplication(
 			authorize: (token, vaultId) =>
 				syncTokenService.verifySyncToken(token, vaultId),
 			refreshSharing: (vaultId) => syncAccess.refresh(vaultId),
-			canApplyPolicy: async (vaultId) =>
-				!(await sharingAccess.isSuspended(vaultId)),
+			canApplyPolicy: async () => true,
 		}),
 		services,
 		socketMessageHandler,

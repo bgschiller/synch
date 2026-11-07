@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { getSubscriptionPlanPolicy } from "../../../subscription/domain/policy";
 import type { VaultAuthorizationStore } from "../ports/outbound/vault-authorization-store";
 import type { VaultCatalogStore } from "../ports/outbound/vault-catalog-store";
 import type { VaultKeyStore } from "../ports/outbound/vault-key-store";
@@ -11,7 +10,6 @@ import { VaultApplicationService } from "./vault-service";
 function setup(overrides: Record<string, unknown> = {}) {
 	const store = {
 		readDefaultOrganizationIdForUser: vi.fn(async () => "org-1"),
-		countVaultsForOrganization: vi.fn(async () => 0),
 		vaultNameExistsForOrganization: vi.fn(async () => false),
 		createVaultForUser: vi.fn(async () => ({
 			id: "vault-1",
@@ -52,23 +50,18 @@ function setup(overrides: Record<string, unknown> = {}) {
 		markVaultDeletionQueueFailed: vi.fn(async () => {}),
 		...overrides,
 	};
-	const policyReader = {
-		readOrganizationPolicy: vi.fn(async () => getSubscriptionPlanPolicy("free")),
-	};
 	const purgeQueue = {
 		enqueueVaultPurge: vi.fn(async () => {}),
 		enqueueInactiveVaultPurge: vi.fn(async () => {}),
 	};
 	return {
 		store,
-		policyReader,
 		purgeQueue,
 		service: new VaultApplicationService(
 			store as unknown as VaultAuthorizationStore,
 			store as unknown as VaultCatalogStore,
 			store as unknown as VaultKeyStore,
 			store as unknown as VaultLifecycleStore,
-			policyReader,
 			purgeQueue,
 		),
 	};
@@ -85,7 +78,6 @@ describe("VaultApplicationService", () => {
 			"user-1",
 			"org-1",
 			"Personal",
-            1,
 		);
 	});
 
@@ -98,20 +90,6 @@ describe("VaultApplicationService", () => {
 			VaultApplicationError,
 		);
 		expect(store.createVaultForUser).not.toHaveBeenCalled();
-	});
-
-	it("preserves zero-limit plans as unlimited", async () => {
-		const { service, store, policyReader } = setup({
-			countVaultsForOrganization: vi.fn(async () => 10),
-		});
-		policyReader.readOrganizationPolicy.mockResolvedValueOnce(
-			getSubscriptionPlanPolicy("self_hosted"),
-		);
-
-		await expect(service.createVault("user-1", "Work")).resolves.toMatchObject({
-			id: "vault-1",
-		});
-		expect(store.createVaultForUser).toHaveBeenCalled();
 	});
 
 	it("restores a deletion claim when purge enqueue fails", async () => {
@@ -136,7 +114,6 @@ describe("VaultApplicationService", () => {
 			"user-1",
 			"vault-1",
 			"org-2",
-			1,
 		);
 	});
 

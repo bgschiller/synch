@@ -3,20 +3,11 @@ import { SharingService } from "../sharing/application/service";
 import { SharingAccess } from "../sharing/application/access";
 import { createApp } from "../app";
 import type { AuthFeatureConfig } from "../auth/better-auth";
-import type { BillingApplicationConfig } from "../billing/application";
-import {
-	capabilitiesFor,
-	isCommunityEdition,
-	type DeploymentProfile,
-} from "../config/deployment-profile";
-import { createSubscriptionFeature } from "./features/create-subscription-feature";
 import { createAuthFeature } from "./features/create-auth-feature";
 import { createVaultFeature } from "./features/create-vault-feature";
-import { createBillingFeature } from "./features/create-billing-feature";
 import { createSyncAccessFeature } from "./features/create-sync-access-feature";
 import { createSyncBlobTransferFeature } from "./features/create-sync-blob-transfer-feature";
 import type { AppDb } from "../db/client";
-import type { SubscriptionProductIdsByPlanId } from "../subscription/application";
 import {
 	CoordinatorProxyRepository,
 	type CoordinatorNamespace,
@@ -36,14 +27,11 @@ export type ApiApplicationDependencies = {
 };
 
 export type ApiApplicationConfig = {
-	profile: DeploymentProfile;
 	corsOrigin: string;
-	auth: Omit<AuthFeatureConfig, "emailVerification">;
+	auth: AuthFeatureConfig;
 	syncTokenSecret: string;
-	adminToken?: string;
 	syncTokenTtlSeconds?: number;
-	productIdsByPlanId: SubscriptionProductIdsByPlanId;
-	billing?: Omit<BillingApplicationConfig, "productIdsByPlanId">;
+	adminToken?: string;
 };
 
 /**
@@ -55,51 +43,23 @@ export function createApiApplication(
 	deps: ApiApplicationDependencies,
 	config: ApiApplicationConfig,
 ) {
-	const capabilities = capabilitiesFor(config.profile);
 	const coordinatorProxyRepository = new CoordinatorProxyRepository(
 		deps.coordinatorNamespace,
 	);
-	const subscriptionFeature = createSubscriptionFeature(deps.db, {
-		selfHosted: isCommunityEdition(config.profile),
-		productIdsByPlanId: config.productIdsByPlanId,
-	});
 	const vaultFeature = createVaultFeature({
 		db: deps.db,
-		policyReader: subscriptionFeature.policyReader,
 		coordinatorPurgeTransport: coordinatorProxyRepository,
 		vaultPurgeQueue: deps.vaultPurgeQueue,
 	});
-	const billingFeature = createBillingFeature({
-		db: deps.db,
-		enabled: capabilities.billing === "polar",
-		billing: config.billing
-			? { ...config.billing, productIdsByPlanId: config.productIdsByPlanId }
-			: undefined,
-		productIdsByPlanId: config.productIdsByPlanId,
-		subscriptionAccessReader: subscriptionFeature.accessReader,
-	});
-	const authFeature = createAuthFeature(
-		deps.db,
-		{
-			...config.auth,
-			emailVerification: capabilities.emailVerification,
-		},
-		billingFeature.authPlugin ? [billingFeature.authPlugin] : [],
-	);
+	const authFeature = createAuthFeature(deps.db, config.auth);
 	const sharingStore = new DrizzleSharingStore(deps.db);
-	const sharingAccess = new SharingAccess(
-		sharingStore,
-		subscriptionFeature.policyReader,
-	);
+	const sharingAccess = new SharingAccess(sharingStore);
 	const sharing = new SharingService(
 		sharingStore,
-		subscriptionFeature.policyReader,
 		coordinatorProxyRepository,
 		{
 			...config.auth,
-			billingBaseURL: config.billing?.wwwBaseUrl,
-			requireVerifiedEmail:
-				capabilities.emailVerification === "required" && !config.auth.devMode,
+			requireVerifiedEmail: false,
 		},
 	);
 	const syncAccessFeature = createSyncAccessFeature({
@@ -130,8 +90,6 @@ export function createApiApplication(
 				downloadBlob: syncBlobTransferFeature.downloadBlob,
 				vaultService: vaultFeature.service,
 				coordinatorProxyRepository,
-				subscriptionPolicyService: subscriptionFeature.policyReader,
-				billingService: billingFeature.service,
 			},
 			{
 				corsOrigin: config.corsOrigin,

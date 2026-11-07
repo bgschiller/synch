@@ -39,7 +39,6 @@ describe("SynchSettingTab remote vault settings", () => {
       t("vault.create"), t("vault.connect"), t("auth.signOut"),
     ]);
     expect(getSettingNames()).not.toContain(t("fileSync.header"));
-    expect(getSettingNames()).not.toContain(t("subscription.label"));
     expect(getSettingNames()).not.toContain(t("diagnostics.header"));
   });
 

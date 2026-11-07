@@ -19,7 +19,6 @@ export class SynchSettingTab extends PluginSettingTab {
   private syncRowControls: SyncRowSettingControls | null = null;
   private storageRowControls: StorageRowSettingControls | null = null;
   private syncDiagnosticsControls: SyncDiagnosticsSettingControls | null = null;
-  private showSelfHostedServerUrl: boolean | null = null;
 
   constructor(
     app: App,
@@ -96,10 +95,6 @@ export class SynchSettingTab extends PluginSettingTab {
     return {
       app: this.app,
       controller: this.controller,
-      showSelfHostedServerUrl: this.showSelfHostedServerUrl,
-      setShowSelfHostedServerUrl: (value) => {
-        this.showSelfHostedServerUrl = value;
-      },
       requestRefresh: () => this.refresh(),
       setSyncRowControls: (controls) => {
         this.syncRowControls = controls;

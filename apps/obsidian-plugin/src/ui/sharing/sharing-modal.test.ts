@@ -11,7 +11,7 @@ function setup(connected = false) {
     id: "vault", name: "test", personal: false, canManage: true,
     status: "active", shared: true, members: [],
   };
-  const organization = { name: "Team", sharing: { enabled: true }, vaults: [vault] };
+  const organization = { name: "Team", vaults: [vault] };
   const manager = {
     userId: "me",
     client: { organizations: vi.fn(async () => [organization]) },
@@ -35,14 +35,6 @@ it("does not collect a vault password", async () => {
   modal.open();
   await tick();
   expect(getTextComponents()).toHaveLength(0);
-});
-
-it("explains unavailable sharing", async () => {
-  const { organization, modal } = setup();
-  organization.sharing.enabled = false;
-  modal.open();
-  await tick();
-  expect(getCreatedElementTexts()).toContain(t("sharing.suspended"));
 });
 
 it("explains an empty organization list", async () => {

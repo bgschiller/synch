@@ -3,33 +3,21 @@ import { describe, expect, it, vi } from "vitest";
 import { VaultPurgeConsumer } from "./purge-consumer";
 
 describe("VaultPurgeConsumer", () => {
-	it("acks after purge and queues a valid inactivity notice", async () => {
+	it("acks after purge", async () => {
 		const purgeVault = vi.fn(async () => {});
-		const retentionEmailQueue = { enqueueDeletionNotice: vi.fn(async () => {}) };
 		const message = {
 			body: {
 				type: "vault_purge" as const,
 				vaultId: "vault-1",
-				reason: "inactivity" as const,
-				notice: {
-					vaultName: "Work",
-					ownerEmail: "owner@example.com",
-					lastCommitAt: 1_000,
-				},
 			},
 			ack: vi.fn(),
 			retry: vi.fn(),
 		};
-		const consumer = new VaultPurgeConsumer({ purgeVault }, retentionEmailQueue);
+		const consumer = new VaultPurgeConsumer({ purgeVault });
 
 		await consumer.handleMessage(message as never);
 
 		expect(purgeVault).toHaveBeenCalledWith("vault-1");
-		expect(retentionEmailQueue.enqueueDeletionNotice).toHaveBeenCalledWith({
-			vaultId: "vault-1",
-			deletedAt: expect.any(Number),
-			notice: message.body.notice,
-		});
 		expect(message.ack).toHaveBeenCalledOnce();
 	});
 

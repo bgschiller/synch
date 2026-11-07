@@ -5,7 +5,6 @@ import { Notice, type Plugin, TFolder } from "obsidian";
 import { SynchReadinessCoordinator } from "./readiness-coordinator";
 import { SynchPluginSessionStore } from "./session-store";
 import { SynchOrganizationRoleService } from "./organization-role-service";
-import { SynchSubscriptionService } from "./subscription-service";
 import { SynchPluginUpdateService } from "./update-service";
 import { defaultHttpClient } from "../adapters/http";
 import { getBuildInfo } from "../config";
@@ -49,11 +48,9 @@ import type {
   SynchDeletedFilesRestoreResult,
   SynchEntryVersionCursor,
   SynchBlockedSyncFile,
-  SynchCommunityPluginUpdateStatus,
   SynchServerCompatibilityStatus,
   SynchStorageDisplayState,
   SynchStorageStatus,
-  SynchSubscriptionStatus,
   SynchSyncLogs,
   SynchSyncState,
   SynchVersionPreview,
@@ -116,16 +113,6 @@ export class SynchPluginController implements SynchSettingsController {
     hasAuthenticatedSession: () => this.hasAuthenticatedSession(),
     getAuthSessionToken: () => this.authManager.getAuthSessionToken(),
     refreshUi: () => this.refreshUi(),
-  });
-
-  private readonly subscriptionService = new SynchSubscriptionService({
-    getOrganizationId: () => this.remoteVaultManager.getActiveSession()?.summary.organizationId,
-    getApiBaseUrl: () => this.getApiBaseUrl(),
-    hasAuthenticatedSession: () => this.hasAuthenticatedSession(),
-    getAuthSessionToken: () => this.authManager.getAuthSessionToken(),
-    refreshUi: () => {
-      this.refreshUi();
-    },
   });
   private readonly authManager = new AuthManager({
     sessionTokenStore: new ObsidianAuthSessionTokenStore(this.plugin),
@@ -321,20 +308,8 @@ export class SynchPluginController implements SynchSettingsController {
     this.readinessCoordinator.queueAutoSyncResume();
   }
 
-  getCommunityPluginUpdateStatus(): SynchCommunityPluginUpdateStatus {
-    return this.updateService.getCommunityPluginUpdateStatus();
-  }
-
   getServerCompatibilityStatus(): SynchServerCompatibilityStatus {
     return this.updateService.getServerCompatibilityStatus();
-  }
-
-  async ensureCommunityPluginUpdateCheck(): Promise<void> {
-    await this.updateService.ensureCommunityPluginUpdateCheck();
-  }
-
-  async retryCommunityPluginUpdateCheck(): Promise<void> {
-    await this.updateService.retryCommunityPluginUpdateCheck();
   }
 
   getOrganizationRole(): string | null {
@@ -347,26 +322,6 @@ export class SynchPluginController implements SynchSettingsController {
 
   async ensureOrganizationRoleCheck(): Promise<void> {
     await this.organizationRoleService.ensureOrganizationRoleCheck();
-  }
-
-  getSubscriptionStatus(): SynchSubscriptionStatus {
-    return this.subscriptionService.getSubscriptionStatus();
-  }
-
-  async ensureSubscriptionStatusCheck(): Promise<void> {
-    await this.subscriptionService.ensureSubscriptionStatusCheck();
-  }
-
-  async retrySubscriptionStatusCheck(): Promise<void> {
-    await this.subscriptionService.retrySubscriptionStatusCheck();
-  }
-
-  openBillingManagementPage(): void {
-    this.subscriptionService.openBillingManagementPage();
-  }
-
-  openPricingPage(): void {
-    this.subscriptionService.openPricingPage();
   }
 
   getAuthStatusLabel(): string {
@@ -647,7 +602,6 @@ export class SynchPluginController implements SynchSettingsController {
 
     const changed = await this.settingsStore.updateApiBaseUrl(value);
     if (changed) {
-      this.updateService.clearCommunityPluginUpdateStatus();
       this.refreshUi();
     }
   }
@@ -673,7 +627,6 @@ export class SynchPluginController implements SynchSettingsController {
       loginStarted = await this.authManager.beginDeviceLogin();
     } finally {
       if (loginStarted) {
-        this.subscriptionService.clearSubscriptionStatus();
         this.clearSyncTokenState();
         await this.ensureAutoSyncState();
       }
@@ -685,7 +638,6 @@ export class SynchPluginController implements SynchSettingsController {
       await this.remoteVaultController.disconnectRemoteVault();
       await this.authManager.signOutDevice();
     } finally {
-      this.subscriptionService.clearSubscriptionStatus();
       this.clearSyncTokenState();
       this.remoteVaultManager.clearSession();
       await this.readinessCoordinator.resetSyncConnection();

@@ -21,7 +21,6 @@ async function setup() {
 	const { handle } = await createSqliteCoordinator();
 	const store = new SqliteSyncAccessStore(handle);
 	let snapshot: SyncAccessSnapshot = {
-		suspended: false,
 		grants: [{ userId: "member", accessVersion: 1 }],
 	};
 	const readSnapshot = vi.fn(async () => snapshot);
@@ -91,32 +90,6 @@ describe("coordinator-local sync access", () => {
 		expect(readSnapshot).toHaveBeenCalledTimes(1);
 	});
 
-	it("applies subscription notifications and persists the block until renewal or token expiry", async () => {
-		const { service, store, setSnapshot, readSnapshot, sockets, create } = await setup();
-		vi.useFakeTimers();
-		vi.setSystemTime(1_000_000);
-		setSnapshot({ suspended: true });
-		// No DO timer or D1 poll: a subscription notification initiates the change.
-		service.require(member);
-		expect(readSnapshot).not.toHaveBeenCalled();
-		await service.refresh("vault-1");
-		expect(sockets.closeSocket).toHaveBeenCalledTimes(2);
-		expect(service.authorizeVerified(member)).toMatchObject({ code: "sharing_suspended" });
-		expect(create().authorizeVerified(member)).toMatchObject({ code: "sharing_suspended" });
-		expect(store.readRevocations()).toEqual([
-			{ key: "vault", minimumVersion: null, expiresAt: 1_120_000 },
-		]);
-
-		// Renewal removes the vault-wide block while retaining revoked members.
-		setSnapshot({ suspended: false, grants: [{ userId: "member", accessVersion: 2 }] });
-		await service.refresh("vault-1");
-		expect(() => service.require({ ...member, userId: "owner" })).not.toThrow();
-		expect(() => service.require(member)).toThrow("This sync session is no longer authorized");
-		expect(store.readRevocations()).toEqual([
-			{ key: "user:member", minimumVersion: 2, expiresAt: 1_120_000 },
-		]);
-	});
-
 	it("retains successful revocations when a later refresh fails and can retry", async () => {
 		const { service, setSnapshot, readSnapshot, create } = await setup();
 		setSnapshot({ grants: [{ userId: "member", accessVersion: 2 }] });
@@ -173,9 +146,19 @@ describe("coordinator-local sync access", () => {
 	it("reloads persisted revocations even when a later storage operation fails", async () => {
 		const { service, store, setSnapshot } = await setup();
 		service.require(member);
-		setSnapshot({ grants: [{ userId: "member", accessVersion: 2 }] });
-		vi.spyOn(store, "deleteRevocation").mockImplementationOnce(() => {
-			throw new Error("storage unavailable");
+		setSnapshot({
+			grants: [
+				{ userId: "member", accessVersion: 2 },
+				{ userId: "owner", accessVersion: 2 },
+			],
+		});
+		// Persist the member's revocation, then fail the second write so the
+		// refresh rejects after the first revocation was already stored.
+		const write = store.writeRevocation.bind(store);
+		let writes = 0;
+		vi.spyOn(store, "writeRevocation").mockImplementation((entry) => {
+			if (++writes === 2) throw new Error("storage unavailable");
+			write(entry);
 		});
 		await expect(service.refresh("vault-1")).rejects.toThrow("storage unavailable");
 		expect(() => service.require(member)).toThrow("This sync session is no longer authorized");

@@ -1,9 +1,4 @@
-export type {
-	InactiveVaultCandidate,
-	VaultInactivityNotice,
-	VaultBootstrapRecord,
-	VaultRecord,
-} from "../../domain/types";
+export type { VaultBootstrapRecord, VaultRecord } from "../../domain/types";
 
 export type VaultPurgeResult = {
 	vaultId: string;

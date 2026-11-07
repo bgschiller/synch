@@ -9,7 +9,6 @@ import type {
   SettingDefinitionItem,
 } from "obsidian";
 
-import { getServerDeployment } from "../../config";
 import { t } from "../../i18n";
 import type { SynchSettingsController } from "./controller";
 import {
@@ -21,10 +20,8 @@ import {
   populateHiddenFolderRow,
   populateHiddenFoldersSetting,
   populatePluginUpdateSetting,
-  populateServerModeSetting,
   populateServerUrlSetting,
   populateStorageStatusSetting,
-  populateSubscriptionSetting,
   populateSyncDiagnosticsSetting,
   populateSyncPausedSetting,
   populateSyncStatusSetting,
@@ -55,8 +52,6 @@ export type SynchSettingControlKey =
 export interface SynchSettingDefinitionsHost {
   app: App;
   controller: SynchSettingsController;
-  showSelfHostedServerUrl: boolean | null;
-  setShowSelfHostedServerUrl(value: boolean): void;
   requestRefresh(): void;
   setSyncRowControls(controls: SyncRowSettingControls | null): void;
   setStorageRowControls(controls: StorageRowSettingControls | null): void;
@@ -84,21 +79,12 @@ export function buildSynchSettingDefinitions(
   const authReadiness = controller.getAuthReadiness();
   const hasAuthenticatedSession = controller.hasAuthenticatedSession();
   const hasConnectedRemoteVault = controller.hasConnectedRemoteVault();
-  const isOfficialCloud =
-    getServerDeployment(controller.getApiBaseUrl()) === "official_cloud";
   const isDeviceLoginInProgress = controller.isDeviceLoginInProgress();
   const serverCompatibility = controller.getServerCompatibilityStatus();
   const syncBlocked =
     serverCompatibility.state === "update_required" ||
     serverCompatibility.state === "incompatible";
   const requestRefresh = (): void => host.requestRefresh();
-
-  // Kick off the update check here, not in the update row's render callback:
-  // the row does not exist until a check has succeeded, so its render
-  // callback cannot run before then. The check is throttled and
-  // fire-and-forget, so this stays cheap; its completion triggers
-  // refreshUi -> update(), which rebuilds the definitions with the row.
-  void controller.ensureCommunityPluginUpdateCheck();
 
   if (authReadiness.state === "pending_network") {
     return [
@@ -117,13 +103,6 @@ export function buildSynchSettingDefinitions(
   if (!hasAuthenticatedSession) {
     const apiBaseUrlOptions: ApiBaseUrlSettingOptions = {
       canChangeApiBaseUrl: !isDeviceLoginInProgress && !hasConnectedRemoteVault,
-      hasConnectedRemoteVault,
-      isDeviceLoginInProgress,
-      showSelfHostedServerUrl: host.showSelfHostedServerUrl ?? !isOfficialCloud,
-      onShowSelfHostedServerUrlChange: (value) => {
-        host.setShowSelfHostedServerUrl(value);
-        host.requestRefresh();
-      },
     };
 
     definitions.push({
@@ -146,20 +125,12 @@ export function buildSynchSettingDefinitions(
 
     const serverItems: SettingDefinition<SynchSettingControlKey>[] = [
       {
-        name: t("server.mode"),
-        render: (setting) => {
-          populateServerModeSetting(setting, controller, apiBaseUrlOptions);
-        },
-      },
-    ];
-    if (apiBaseUrlOptions.showSelfHostedServerUrl) {
-      serverItems.push({
         name: t("server.url"),
         render: (setting) => {
           populateServerUrlSetting(setting, controller, apiBaseUrlOptions);
         },
-      });
-    }
+      },
+    ];
     definitions.push({
       type: "group",
       heading: t("server.heading"),
@@ -226,29 +197,14 @@ export function buildSynchSettingDefinitions(
   void controller.ensureOrganizationRoleCheck();
   const organizationRole = controller.getOrganizationRole();
 
-  if (isOfficialCloud && organizationRole === "owner") {
-    definitions.push({
-      name: t("subscription.label"),
-      render: (setting) => {
-        void controller.ensureSubscriptionStatusCheck();
-        populateSubscriptionSetting(setting, controller, requestRefresh);
-      },
-    });
-  }
-
   // Older self-hosted servers lack organization discovery but still support
   // vault management. Keep that capability separate from a verified role.
-  const legacyVaultManagement =
-    !isOfficialCloud && controller.isOrganizationRoleApiUnavailable();
+  const legacyVaultManagement = controller.isOrganizationRoleApiUnavailable();
   if (organizationRole === "owner" || organizationRole === "admin" || legacyVaultManagement) {
     definitions.push({
       name: t("vault.manage"),
       desc: t("vault.manageDesc"),
       render: (setting) => {
-        // Admins still need the plan status to show the sharing action.
-        if (isOfficialCloud && organizationRole === "admin") {
-          void controller.ensureSubscriptionStatusCheck();
-        }
         populateVaultManageSetting(setting, controller);
       },
     });
@@ -502,8 +458,6 @@ function buildFileSyncItems(
  * Zero or one definitions: the row exists only while an update is available
  * or required. Absent rows are omitted rather than hidden with a `visible`
  * predicate, because hidden rows keep an element whose divider still shows.
- * The update check that can make the row appear is kicked off in
- * buildSynchSettingDefinitions.
  */
 function pluginUpdateDefinitions(
   host: SynchSettingDefinitionsHost,

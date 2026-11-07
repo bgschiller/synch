@@ -1,9 +1,8 @@
 /**
- * Shared Wrangler config for Synch API deployments.
+ * Wrangler config for the self-hosted Synch API deployment.
  *
- * Top-level bindings are the public self-hosted deployment used by Deploy to
- * Cloudflare. They omit generated resource IDs so Cloudflare can provision
- * resources for first-time setup flows.
+ * Bindings omit generated resource IDs so Cloudflare can provision
+ * resources during first-time setup.
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
@@ -60,8 +59,7 @@
 		}
 	],
 	"vars": {
-		"SYNC_TOKEN_TTL_SECONDS": 120,
-		"SELF_HOSTED": true
+		"SYNC_TOKEN_TTL_SECONDS": 120
 	},
 	"triggers": {
 		"crons": ["*/5 * * * *"]
@@ -72,103 +70,5 @@
 			"BETTER_AUTH_SECRET",
 			"SYNC_TOKEN_SECRET"
 		]
-	},
-	"env": {
-		"managed": {
-			"triggers": {
-				"crons": [
-					"*/5 * * * *",
-					"0 */6 * * *"
-				]
-			},
-			"durable_objects": {
-				"bindings": [
-					{
-						"class_name": "SyncCoordinator",
-						"name": "SYNC_COORDINATOR"
-					}
-				]
-			},
-			"r2_buckets": [
-				{
-					"binding": "SYNC_BLOBS",
-					"bucket_name": "synch-bucket"
-				}
-			],
-			"d1_databases": [
-				{
-					"binding": "DB",
-					"database_name": "synch-db",
-					"database_id": "3d5d180d-3fa2-4489-8433-265fb596ee97",
-					"migrations_dir": "drizzle"
-				}
-			],
-			"queues": {
-				"producers": [
-					{
-						"binding": "VAULT_PURGE_QUEUE",
-						"queue": "synch-vault-purge"
-					},
-					{
-						"binding": "POLICY_REFRESH_QUEUE",
-						"queue": "synch-policy-refresh"
-					},
-					{
-						"binding": "RETENTION_NOTIFICATION_QUEUE",
-						"queue": "synch-retention-notification"
-					}
-				],
-				"consumers": [
-					{
-						"queue": "synch-vault-purge",
-						"max_batch_size": 1,
-						"max_batch_timeout": 0,
-						"max_retries": 3
-					},
-					{
-						"queue": "synch-policy-refresh",
-						"max_batch_size": 1,
-						"max_batch_timeout": 0,
-						"max_retries": 5
-					},
-					{
-						"queue": "synch-retention-notification",
-						"max_batch_size": 1,
-						"max_batch_timeout": 0,
-						"max_retries": 3
-					}
-				]
-			},
-			"send_email": [
-				{
-					"name": "EMAIL"
-				}
-			],
-			"vars": {
-				"SYNC_TOKEN_TTL_SECONDS": 120,
-				"SELF_HOSTED": false,
-				"WWW_BASE_URL": "https://synch.run"
-			},
-			"secrets": {
-				"required": [
-					"AUTH_EMAIL_FROM",
-					"BETTER_AUTH_SECRET",
-					"BETTER_AUTH_URL",
-					"GITHUB_CLIENT_ID",
-					"GITHUB_CLIENT_SECRET",
-					"POLAR_ACCESS_TOKEN",
-					"POLAR_PLUS_ANNUAL_PRODUCT_ID",
-					"POLAR_PLUS_MONTHLY_PRODUCT_ID",
-					"POLAR_SANDBOX",
-					"POLAR_STARTER_ANNUAL_PRODUCT_ID",
-					"POLAR_STARTER_MONTHLY_PRODUCT_ID",
-					"POLAR_WEBHOOK_SECRET",
-					"SYNC_TOKEN_SECRET"
-				]
-			},
-			"observability": {
-				"enabled": true,
-			}
-		}
 	}
 }

@@ -1,4 +1,4 @@
-# Encrypted sync E2E
+# Sync E2E
 
 Run from the repository root after `pnpm install --frozen-lockfile`:
 
@@ -14,7 +14,7 @@ Cloudflare credentials, Obsidian installation, or local `.env` is needed.
 
 ## Scope
 
-The same scenarios use real `SyncEngine`, event recording, encryption, HTTP and
+The same scenarios use real `SyncEngine`, event recording, HTTP and
 WebSocket clients against either the production Node entry point (SQLite/libSQL
 and disk blobs) or Wrangler's local Cloudflare runtime (workerd, D1, Durable
 Objects and R2). Cloudflare bindings are derived from the production community
@@ -23,10 +23,8 @@ email and subscription policy remain covered by the existing API integration tes
 These tests do not exercise Cloudflare's deployed network or Obsidian UI/Dexie.
 
 Every test gets a fresh remote vault and independent in-memory client stores.
-Vault keys are password wrapped using production crypto. The second device fetches
-the wrapper from the server and unlocks it independently. Downloaded ciphertext is
-compared with uploaded ciphertext and checked for fixture plaintext leakage; this
-is a regression check, not a general proof that all server storage/logs are secret-free.
+The two devices connect to the same remote vault and converge through the real
+sync protocol.
 
 ## Conflict contracts
 
@@ -40,13 +38,13 @@ is a regression check, not a general proof that all server storage/logs are secr
   local content survives in a conflict copy. Both orders preserve the entry identity.
 - A transport barrier holds an actual outgoing commit while the other device commits.
   The real server must reject the stale revision, and the engine must pull, rebase,
-  re-encrypt and commit successfully.
+  and commit successfully.
 
 Conflict copies are intentionally excluded from sync by the existing file policy.
 Tests therefore assert canonical convergence and preservation on the conflicting
 device separately. Repeated sync and reconnect must not add copies or pending work.
-Wrong keys and modified blob responses must preserve the local file and pull cursor;
-restoring the key/transport must allow the same update to complete.
+Modified blob responses must preserve the local file and pull cursor; restoring
+the transport must allow the same update to complete.
 
 ## Execution and diagnostics
 

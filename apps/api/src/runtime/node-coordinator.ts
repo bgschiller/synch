@@ -2,9 +2,7 @@ import type { VerifiedVaultAccess } from "../sync-coordinator/application/servic
 import type Database from "better-sqlite3";
 
 import { createCoordinatorApplication } from "../composition/create-coordinator-application";
-import type { DeploymentProfile } from "../config/deployment-profile";
 import type { AppDb } from "../db/client";
-import type { SubscriptionProductIdsByPlanId } from "../subscription/application";
 import type { BlobObjectStorage } from "../sync-blob-transfer/application/ports/outbound/blob-object-storage";
 import { NodeMaintenanceScheduler } from "../sync-coordinator/adapters/outbound/scheduler/node-maintenance-scheduler";
 import { NodeSocketGateway } from "../sync-coordinator/adapters/outbound/socket/node-service";
@@ -21,8 +19,6 @@ export interface NodeCoordinatorSharedDeps {
 	blobStorage: BlobObjectStorage;
 	syncTokenSecret: string;
 	syncTokenTtlSeconds?: number;
-	profile: Extract<DeploymentProfile, { platform: "node" }>;
-	productIdsByPlanId: SubscriptionProductIdsByPlanId;
 }
 
 /**
@@ -81,8 +77,6 @@ export function createNodeCoordinatorRuntime(
 			maintenanceScheduler,
 		},
 		{
-			profile: deps.profile,
-			productIdsByPlanId: deps.productIdsByPlanId,
 			syncTokenSecret: deps.syncTokenSecret,
 			syncTokenTtlSeconds: deps.syncTokenTtlSeconds,
 		},

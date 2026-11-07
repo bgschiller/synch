@@ -139,10 +139,8 @@ describe("vault integration", () => {
 		const primary = await signUpAndCreateVault("Self Hosted Delete");
 		const selfHostedEnv = {
 			...env,
-			SELF_HOSTED: true,
 			AUTH_ALLOWED_EMAILS: primary.email,
 			VAULT_PURGE_QUEUE: undefined,
-			POLICY_REFRESH_QUEUE: undefined,
 		} as unknown as Env;
 
 		const deleted = await jsonRequestWithEnv(
@@ -227,7 +225,7 @@ describe("vault integration", () => {
 		const primary = await signUpAndCreateVault("Shared Name");
 		const duplicate = await jsonRequestWithEnv<{ vault: { id: string; name: string } }>(
 			"/v1/vaults",
-			{ ...env, SELF_HOSTED: true, AUTH_ALLOWED_EMAILS: primary.email },
+			{ ...env, AUTH_ALLOWED_EMAILS: primary.email },
 			{
 				method: "POST",
 				headers: {
@@ -337,7 +335,7 @@ describe("vault integration", () => {
         expect(bootstrap.response.status).toBe(403);
     });
 
-	it("rejects a second vault on the free plan", async () => {
+	it("allows a second vault", async () => {
 		const primary = await signUpAndCreateVault("Personal");
 		const duplicate = await jsonRequest<{ vault: { id: string; name: string } }>("/v1/vaults", {
 			method: "POST",
@@ -346,33 +344,12 @@ describe("vault integration", () => {
 				cookie: primary.sessionCookie,
 			},
 			body: JSON.stringify({
-				name: "Personal",
+				name: "Work",
 			}),
 		});
 
-		expect(duplicate.response.status).toBe(403);
-		expect(duplicate.text).toContain("vault_limit_exceeded");
-	});
-
-	it("allows a second vault when the API runs in self-hosted mode", async () => {
-		const primary = await signUpAndCreateVault("Self Hosted Personal");
-		const duplicate = await jsonRequestWithEnv<{ vault: { id: string; name: string } }>(
-			"/v1/vaults",
-			{ ...env, SELF_HOSTED: true, AUTH_ALLOWED_EMAILS: primary.email },
-			{
-				method: "POST",
-				headers: {
-					"content-type": "application/json",
-					cookie: primary.sessionCookie,
-				},
-				body: JSON.stringify({
-					name: "Self Hosted Work",
-				}),
-			},
-		);
-
 		expect(duplicate.response.status).toBe(201);
-		expect(duplicate.json?.vault.name).toBe("Self Hosted Work");
+		expect(duplicate.json?.vault.name).toBe("Work");
 	});
 
 	it("moves a vault to another organization the user manages", async () => {

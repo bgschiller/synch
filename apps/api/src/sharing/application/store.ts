@@ -42,7 +42,6 @@ export type CreateInvitation = {
 	email: string;
 	role: string;
 	inviterId: string;
-	memberLimit: number;
 };
 
 /** Persistence contract; domain and application code do not depend on Drizzle. */

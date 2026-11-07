@@ -10,7 +10,6 @@ import * as s from "../db/d1";
 import { DrizzleSharingStore } from "./adapters/drizzle-sharing-store";
 import { SharingService } from "./application/service";
 import { SharingAccess } from "./application/access";
-import { getSubscriptionPlanPolicy } from "../subscription/domain/policy";
 
 const clients: Client[] = [];
 afterEach(() => {
@@ -54,13 +53,8 @@ async function setup() {
 			status: "active",
 		});
 	}
-	let plan: "plus" | "free" = "plus";
-	const policy = {
-		readOrganizationPolicy: async () => getSubscriptionPlanPolicy(plan),
-	};
 	const service = new SharingService(
 		store,
-		policy,
 		{ refreshSharingAccess: async () => {} },
 		{ baseURL: "https://example.com", requireVerifiedEmail: true },
 	);
@@ -68,10 +62,7 @@ async function setup() {
 		db,
 		store,
 		service,
-		access: new SharingAccess(store, policy),
-		setPlan: (p: typeof plan) => {
-			plan = p;
-		},
+		access: new SharingAccess(store),
 	};
 }
 const actor = (id: string) => ({ id, email: `${id}@example.com` });
@@ -106,12 +97,12 @@ describe("organization vault sharing", () => {
 		expect(await access.require("alice", "vault-a")).toBe(1);
 	});
 
-	it("reserves three seats including the owner without requiring any vaults", async () => {
+	it("invites members without requiring any vaults", async () => {
 		const { service, store, db } = await setup();
 		await db.delete(s.vault);
 		const a = await service.invite(actor("owner"), "org", { email: actor("alice").email, role: "member" });
 		await service.invite(actor("owner"), "org", { email: actor("bob").email, role: "member" });
-		await expect(service.invite(actor("owner"), "org", { email: actor("carol").email, role: "member" })).rejects.toMatchObject({ code: "invitation_conflict" });
+		await service.invite(actor("owner"), "org", { email: actor("carol").email, role: "member" });
 		await service.resend("owner", "org", a.id);
 		await service.respond(actor("alice"), a.id, true);
 		expect(await store.membership("org", "alice")).not.toBeNull();
@@ -119,7 +110,7 @@ describe("organization vault sharing", () => {
 	});
 
 	it("rejects privilege escalation, wrong recipients, foreign vaults and expired invitations", async () => {
-		const { service, db, store, access, setPlan } = await setup();
+		const { service, db, store, access } = await setup();
 		await db.insert(s.member).values({
 			id: "alice-org",
 			organizationId: "org",
@@ -183,11 +174,6 @@ describe("organization vault sharing", () => {
 		await expect(
 			service.respond(actor("carol"), invite.id, true),
 		).rejects.toMatchObject({ code: "forbidden" });
-		setPlan("free");
-		await expect(
-			service.respond(actor("bob"), invite.id, true),
-		).rejects.toMatchObject({ code: "sharing_unavailable" });
-		setPlan("plus");
 		await db
 			.update(s.invitation)
 			.set({ expiresAt: new Date(0) })
@@ -198,7 +184,7 @@ describe("organization vault sharing", () => {
 		expect(await store.membership("org", "bob")).toBeNull();
 	});
 
-	it("reserves seats and vault quota atomically under concurrent requests", async () => {
+	it("accepts concurrent invitations and makes membership idempotent", async () => {
 		const { service, db, store } = await setup();
 		const invites = await Promise.allSettled(
 			["alice", "bob", "carol"].map((id) =>
@@ -210,32 +196,27 @@ describe("organization vault sharing", () => {
 		);
 		expect(
 			invites.filter((value) => value.status === "fulfilled"),
-		).toHaveLength(2);
-		for (const result of invites)
-			if (result.status === "fulfilled") {
-				const invite = await store.invitation(result.value.id);
-				const id = invite!.email.split("@")[0];
-				await Promise.allSettled([
-					service.respond(actor(id), invite!.id, true),
-					service.respond(actor(id), invite!.id, true),
-				]);
-			}
-		expect(await store.members("org")).toHaveLength(3);
+		).toHaveLength(3);
+		for (const result of invites) {
+			if (result.status !== "fulfilled") continue;
+			const invite = await store.invitation(result.value.id);
+			const id = invite!.email.split("@")[0];
+			await Promise.allSettled([
+				service.respond(actor(id), invite!.id, true),
+				service.respond(actor(id), invite!.id, true),
+			]);
+		}
+		expect(await store.members("org")).toHaveLength(4);
 		const vaultStore = new DrizzleVaultStore(db);
 		const vaults = await Promise.allSettled(
 			[0, 1, 2, 3].map((i) =>
-				vaultStore.createVaultForUser(
-					"owner",
-					"org",
-					`concurrent-${i}`,
-					3,
-				),
+				vaultStore.createVaultForUser("owner", "org", `concurrent-${i}`),
 			),
 		);
 		expect(vaults.filter((value) => value.status === "fulfilled")).toHaveLength(
-			1,
+			4,
 		);
-		expect(await vaultStore.countVaultsForOrganization("org")).toBe(3);
+		expect(await vaultStore.countVaultsForOrganization("org")).toBe(6);
 	});
 
 	it("retains failed refresh delivery", async () => {
@@ -247,7 +228,6 @@ describe("organization vault sharing", () => {
 		await service.respond(actor("alice"), invite.id, true);
 		const failing = new SharingService(
 			store,
-			{ readOrganizationPolicy: async () => getSubscriptionPlanPolicy("plus") },
 			{
 				refreshSharingAccess: async () => {
 					throw new Error("unavailable");
@@ -278,19 +258,5 @@ describe("organization vault sharing", () => {
 		// outstanding sync token); re-enrollment restores access without
 		// rolling it back.
 		expect(await access.require("alice", "vault-a")).toBe(2);
-	});
-
-	it("suspends shared vaults when Plus expires and resumes after renewal", async () => {
-		const { service, access, setPlan } = await setup();
-		const invite = await service.invite(actor("owner"), "org", { email: actor("alice").email, role: "member" });
-		await service.respond(actor("alice"), invite.id, true);
-		setPlan("free");
-		await expect(access.require("owner", "vault-a")).rejects.toMatchObject({
-			code: "sharing_suspended",
-		});
-		await expect(access.require("owner", "vault-b")).rejects.toMatchObject({ code: "sharing_suspended" });
-		expect((await service.organization("alice", "org")).vaults.every(v => v.status === "active")).toBe(true);
-		setPlan("plus");
-		expect(await access.require("owner", "vault-a")).toBe(1);
 	});
 });

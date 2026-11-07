@@ -1,11 +1,10 @@
 <h1 align="center">Synch</h1>
 
-<p align="center">End-to-end encrypted sync for Obsidian.</p>
+<p align="center">Simple sync for Obsidian.</p>
 
 <p align="center">
-  <a href="https://synch.run">Website</a> ·
-  <a href="https://synch.run/self-hosting">Cloudflare deployment</a> ·
-  <a href="https://synch.run/self-hosting-docker">Docker deployment</a>
+  <a href="apps/api/install.sh">Self-hosting install script</a> ·
+  <a href="apps/api/docker-compose.yml">Docker Compose</a>
 </p>
 
 <p align="center">
@@ -14,31 +13,22 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> |
-  <a href="docs/i18n/README.ko.md">한국어</a> |
-  <a href="docs/i18n/README.ja.md">日本語</a> |
-  <a href="docs/i18n/README.de.md">Deutsch</a> |
-  <a href="docs/i18n/README.zh-CN.md">简体中文</a> |
-  <a href="docs/i18n/README.zh-TW.md">繁體中文</a>
-</p>
-
-<p align="center">
-  <a href="https://synch.run"><img alt="Synch overview" src=".github/assets/synch-preview.webp" /></a>
+  <img alt="Synch overview" src=".github/assets/synch-preview.webp" />
 </p>
 
 ---
 
-Keep your Obsidian vault in sync across devices with local encryption, version
-history, and conflict-safe file handling.
+Keep your Obsidian vault in sync across devices with version history and
+conflict-safe file handling.
 
 Synch is an independent community plugin and service. It is not affiliated with
 Obsidian.
 
 ## Why Synch?
 
-- **Private by design** — Vault data is encrypted on your device before upload.
+- **Simple to set up** — Connect a remote vault and start syncing.
 - **Fast sync** — Changes are detected frequently and synced across devices.
-- **Recoverable** — Restore previous versions and deleted files from encrypted history.
+- **Recoverable** — Restore previous versions and deleted files from sync history.
 - **Conflict-safe** — Non-overlapping Markdown edits can be merged automatically.
 - **Your choice of hosting** — Use Synch Cloud or run your own Synch server.
 
@@ -46,14 +36,12 @@ Obsidian.
 
 ```mermaid
 flowchart LR
-    device["Your device"] --> encrypt["Encrypt vault data locally"]
-    encrypt --> server["Synch Cloud or your self-hosted server"]
-    server --> other["Download and decrypt on another device"]
+    device["Your device"] --> server["Synch Cloud or your self-hosted server"]
+    server --> other["Download on another device"]
 ```
 
-The sync service stores encrypted file blobs and encrypted sync metadata. It is
-designed so that the hosted service cannot read your plaintext notes, plaintext
-file paths, or vault keys.
+The sync service stores file blobs and sync metadata as plaintext. There is no
+end-to-end encryption; the hosted service can read your notes and file paths.
 
 ## Compare Obsidian sync options
 
@@ -61,7 +49,7 @@ Every option has a different balance of convenience, control, and setup effort.
 
 | Option | Encryption | Storage model | Conflict handling | Best fit |
 | --- | --- | --- | --- | --- |
-| **Synch** | Device-side E2EE | Synch Cloud or self-hosted | Automatically merges non-overlapping Markdown edits; preserves overlapping conflicts | Users who want a simple, open-source, privacy-focused workflow |
+| **Synch** | None (plaintext) | Synch Cloud or self-hosted | Automatically merges non-overlapping Markdown edits; preserves overlapping conflicts | Users who want a simple, open-source workflow |
 | [Obsidian Sync](https://obsidian.md/sync) | E2EE by default; standard encryption is also available | Obsidian-hosted | Official Obsidian integration and sync history | Users who prefer the official hosted service |
 | [Self-hosted LiveSync](https://github.com/vrtmrz/obsidian-livesync) | E2EE | Self-hosted CouchDB, object storage, or optional WebRTC | Automatically merges simple conflicts | Users who want maximum backend control |
 | [Remotely Save](https://github.com/remotely-save/remotely-save) | Optional password-based E2EE | Your S3, WebDAV, Dropbox, OneDrive, Google Drive, and other storage | Basic conflict detection; advanced smart conflict handling is available in Pro | Users who already have a preferred storage provider |
@@ -72,7 +60,7 @@ documentation and settings before migrating an important vault.
 ## Features
 
 - Near-instant synchronization
-- Encrypted version history
+- Version history
 - Deleted file recovery
 - Automatic Markdown conflict merging
 - Conflict copies when edits overlap
@@ -99,19 +87,11 @@ downloads remote changes.
 
 ### Self-hosted Synch
 
-The Cloudflare deployment guide deploys Synch to your own Cloudflare account. For
-a non-Cloudflare deployment, use the Docker/systemd guide.
-
 You can run Synch on:
 
-- Cloudflare
-- Docker
-- Your own hardware with systemd
-
-See the deployment guides:
-
-- [Cloudflare deployment](https://synch.run/self-hosting)
-- [Docker/systemd deployment](https://synch.run/self-hosting-docker)
+- Cloudflare — deploy `apps/api` using [`wrangler.jsonc`](apps/api/wrangler.jsonc)
+- Docker — [`docker-compose.yml`](apps/api/docker-compose.yml)
+- Your own hardware with systemd — [`install.sh`](apps/api/install.sh)
 
 After deployment, set the custom API base URL in the plugin settings.
 
@@ -121,7 +101,6 @@ Always create a full backup of your vault before:
 
 - Installing a new synchronization provider
 - Migrating from another sync solution
-- Changing encryption settings
 - Resetting or reconnecting a remote vault
 
 Do not run multiple synchronization providers against the same vault unless you
@@ -151,8 +130,8 @@ requests to:
 
 - Sign in and maintain an authenticated device session.
 - Create, list, and connect remote vaults.
-- Upload encrypted file blobs and encrypted sync metadata.
-- Download encrypted file blobs and encrypted sync metadata.
+- Upload file blobs and sync metadata.
+- Download file blobs and sync metadata.
 - Exchange realtime sync messages over WebSocket connections.
 - Read account, billing, quota, storage, and sync status.
 
@@ -162,17 +141,15 @@ Billing is handled by Polar.
 
 ### Data sent to Synch
 
-Vault file contents and file path metadata are encrypted on your device before
-they are uploaded. Synch stores encrypted blobs and encrypted sync metadata and
-is designed so that the hosted service cannot read your plaintext notes,
-plaintext file paths, or plaintext vault keys.
+Vault file contents and file path metadata are uploaded as plaintext and stored
+as plaintext blobs and sync metadata. There is no end-to-end encryption; the
+hosted service can read your notes and file paths.
 
-End-to-end encryption does not hide all operational metadata. Synch may process
-account information, vault identifiers and names, organization and membership
-records, local vault identifiers, blob identifiers, file sizes, storage usage,
-timestamps, sync cursors, session information, IP addresses, User-Agent
-strings, billing identifiers for hosted subscriptions, and similar operational
-metadata.
+Synch processes operational metadata such as account information, vault
+identifiers and names, organization and membership records, local vault
+identifiers, blob identifiers, file sizes, storage usage, timestamps, sync
+cursors, session information, IP addresses, User-Agent strings, billing
+identifiers for hosted subscriptions, and similar operational metadata.
 
 ### Local vault access
 
@@ -195,11 +172,6 @@ processing and subscription management are handled by Polar.
 The Synch Obsidian plugin does not include client-side telemetry and does not
 show ads. The hosted service may process operational logs and service metadata
 needed to run, secure, troubleshoot, and improve the service.
-
-For details, read the hosted service legal documents:
-
-- [Privacy Policy](https://synch.run/privacy)
-- [Terms of Service](https://synch.run/terms)
 
 </details>
 

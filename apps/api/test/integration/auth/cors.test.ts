@@ -1,12 +1,14 @@
-import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 
 import { apiRequest } from "../../helpers/api";
-import { requestWithEnv, type RuntimeTestEnv } from "./helpers";
+
+function apiOrigin(): string {
+	return new URL(process.env.BETTER_AUTH_URL ?? "http://localhost:8787").origin;
+}
 
 describe("auth CORS integration", () => {
-	it("allows CORS requests from the local web dev origin", async () => {
-		const allowedOrigin = "http://localhost:4321";
+	it("allows CORS requests from the API's own origin", async () => {
+		const allowedOrigin = apiOrigin();
 
 		const response = await apiRequest("/health", {
 			headers: {
@@ -19,8 +21,8 @@ describe("auth CORS integration", () => {
 		expect(response.headers.get("access-control-allow-credentials")).toBe("true");
 	});
 
-	it("handles CORS preflight only for the local web dev origin", async () => {
-		const allowedOrigin = "http://localhost:4321";
+	it("handles CORS preflight only for the API's own origin", async () => {
+		const allowedOrigin = apiOrigin();
 
 		const allowedResponse = await apiRequest("/api/auth/get-session", {
 			method: "OPTIONS",
@@ -43,34 +45,6 @@ describe("auth CORS integration", () => {
 		});
 
 		expect(deniedResponse.status).toBe(204);
-		expect(deniedResponse.headers.get("access-control-allow-origin")).toBeNull();
-	});
-
-	it("uses the local web dev origin for CORS in dev mode", async () => {
-		const localOrigin = "http://localhost:4321";
-		const deployedOrigin = "https://synch.run";
-		const testEnv: RuntimeTestEnv = {
-			...env,
-			DEV_MODE: true,
-			WWW_BASE_URL: deployedOrigin,
-		};
-
-		const allowedResponse = await requestWithEnv("/health", testEnv, {
-			headers: {
-				origin: localOrigin,
-			},
-		});
-
-		expect(allowedResponse.status).toBe(200);
-		expect(allowedResponse.headers.get("access-control-allow-origin")).toBe(localOrigin);
-
-		const deniedResponse = await requestWithEnv("/health", testEnv, {
-			headers: {
-				origin: deployedOrigin,
-			},
-		});
-
-		expect(deniedResponse.status).toBe(200);
 		expect(deniedResponse.headers.get("access-control-allow-origin")).toBeNull();
 	});
 });

@@ -47,13 +47,7 @@ describe("API page translation catalogs", () => {
     const locales = (await readdir(localesDir)).filter(
       (name) => name.endsWith(".json") && name !== "en.json",
     );
-    expect(locales.sort()).toEqual([
-      "de.json",
-      "ja.json",
-      "ko.json",
-      "zh-cn.json",
-      "zh-tw.json",
-    ]);
+    expect(locales.sort()).toEqual([]);
     const parameters = (message: string) =>
       [...message.matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort();
     for (const locale of locales) {

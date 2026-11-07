@@ -34,7 +34,7 @@ Use this skill in the Synch repository before publishing git work that may affec
    - Prefer headings such as `## Added`, `## Changed`, and `## Fixed`.
    - Mention Obsidian-visible behavior, including user-facing changes that land through `@synch/sync-client`, plus release workflow changes and vault safety fixes.
    - Avoid internal implementation details, test-only changes, and noisy file-by-file descriptions.
-   - Preserve end-to-end encryption guarantees: do not imply that plaintext vault contents, keys, or decrypted data are uploaded or exposed.
+   - Do not claim end-to-end encryption: vault contents are synced as plaintext.
 
 6. Use the latest release as the historical baseline when the note needs a full refresh.
    - Prefer the latest GitHub release or latest tag if already known locally.
