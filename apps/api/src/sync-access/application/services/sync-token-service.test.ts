@@ -9,7 +9,6 @@ function accessibleVault() {
 		id: "vault-1",
 		organizationId: "org-1",
 		name: "Vault",
-		activeKeyVersion: 1,
 		createdAt: new Date(0),
 		deletedAt: null,
 		purgeStatus: null,

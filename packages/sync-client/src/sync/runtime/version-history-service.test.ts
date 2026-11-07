@@ -1,8 +1,7 @@
 import { createTestContentRuntime } from "../../test-support/content-runtime";
 import { describe, expect, it, vi } from "vitest";
 
-import { hashBytes } from "../core/content";
-import { encryptSyncBlob, encryptSyncMetadata } from "../core/crypto";
+import { hashBytes, serializeSyncedEntryMetadata } from "../core/content";
 import type { SyncRealtimeSession } from "../remote/realtime-client";
 import { createTestSyncStore } from "../../test-support/in-memory-sync-store";
 import {
@@ -37,18 +36,10 @@ describe("SyncVersionHistoryService", () => {
 
   it("lists server deleted entries as decrypted pages", async () => {
     const store = createTestSyncStore();
-    const encryptedMetadata = await encryptSyncMetadata(
-      {
-        path: "Folder/deleted.md",
-        hash: null,
-      },
-      {
-        entryId: "entry-deleted",
-        revision: 3,
-        op: "delete",
-        blobId: null,
-      },
-    );
+    const encryptedMetadata = serializeSyncedEntryMetadata({
+      path: "Folder/deleted.md",
+      hash: null,
+    });
     const listDeletedEntries = vi.fn(async () => ({
       entries: [
         {
@@ -90,18 +81,10 @@ describe("SyncVersionHistoryService", () => {
 
   it("restores deleted entries from their newest upsert version", async () => {
     const store = createTestSyncStore();
-    const versionMetadata = await encryptSyncMetadata(
-      {
-        path: "Folder/deleted.md",
-        hash: "hash-old",
-      },
-      {
-        entryId: "entry-deleted",
-        revision: 2,
-        op: "upsert",
-        blobId: "blob-old",
-      },
-    );
+    const versionMetadata = serializeSyncedEntryMetadata({
+      path: "Folder/deleted.md",
+      hash: "hash-old",
+    });
     const restoreEntryVersions = vi.fn(async () => ({
       cursor: 4,
       results: [
@@ -356,9 +339,7 @@ describe("SyncVersionHistoryService", () => {
       body,
     });
     const blobClient = createBlobClient({
-      "blob-old": await encryptSyncBlob(new TextEncoder().encode(body), {
-        blobId: "blob-old",
-      }),
+      "blob-old": new TextEncoder().encode(body),
     });
     const service = createService(store, { blobClient });
 
@@ -399,9 +380,7 @@ describe("SyncVersionHistoryService", () => {
       bytes,
     });
     const blobClient = createBlobClient({
-      "blob-old": await encryptSyncBlob(bytes, {
-        blobId: "blob-old",
-      }),
+      "blob-old": bytes,
     });
     const service = createService(store, { blobClient });
 
@@ -461,9 +440,7 @@ describe("SyncVersionHistoryService", () => {
     });
     const service = createService(store, {
       blobClient: createBlobClient({
-        "blob-old": await encryptSyncBlob(new TextEncoder().encode(body), {
-          blobId: "blob-old",
-        }),
+        "blob-old": new TextEncoder().encode(body),
       }),
       withRealtimeSession: async (work) => await work(session),
     });
@@ -586,10 +563,7 @@ describe("SyncVersionHistoryService", () => {
     });
     const service = createService(store, {
       blobClient: createBlobClient({
-        "blob-old": await encryptSyncBlob(
-          new TextEncoder().encode("different body"),
-          { blobId: "blob-old" },
-        ),
+        "blob-old": new TextEncoder().encode("different body"),
       }),
     });
 
@@ -823,18 +797,10 @@ async function createEntryVersion(input: {
     sourceRevision: input.sourceRevision,
     op: "upsert",
     blobId: "blob-old",
-    encryptedMetadata: await encryptSyncMetadata(
-      {
-        path: input.path ?? "Folder/active.md",
-        hash: await hashBytes(bytes),
-      },
-      {
-        entryId: input.entryId,
-        revision: input.sourceRevision,
-        op: "upsert",
-        blobId: "blob-old",
-      },
-    ),
+    encryptedMetadata: serializeSyncedEntryMetadata({
+      path: input.path ?? "Folder/active.md",
+      hash: await hashBytes(bytes),
+    }),
     reason: "before_delete",
     capturedAt: 200,
   };

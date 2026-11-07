@@ -2,7 +2,6 @@ export interface RemoteVaultRecord {
   id: string;
   organizationId: string;
   name: string;
-  activeKeyVersion: number;
   createdAt: string;
 }
 
@@ -22,7 +21,6 @@ export interface RemoteVaultSessionSummary {
   organizationId?: string;
   vaultId: string;
   vaultName: string;
-  activeKeyVersion: number;
   bootstrappedAt: string | null;
 }
 

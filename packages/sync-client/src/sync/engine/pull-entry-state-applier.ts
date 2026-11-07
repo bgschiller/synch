@@ -2,7 +2,7 @@ import type { SyncEventRecorderStore } from "./event-recorder";
 import { PullLocalFileSnapshots, PullLocalFilesChangedError } from "./pull-local-file-snapshots";
 import { retrySyncStateWork, syncStateCoordinator, withSyncState, type SyncStateSnapshot, type SyncStateResources } from "./sync-state-coordinator";
 import type { SyncConflictPolicy } from "../core/conflict-policy";
-import { decryptSyncMetadata } from "../core/crypto";
+import { parseSyncedEntryMetadata } from "../core/content";
 import type { ContentReservation, SyncContentRuntimeDeps } from "../core/content-runtime";
 import type { SyncTokenResponse } from "../remote/client";
 import type { RemoteEntryState } from "../remote/changes";
@@ -31,7 +31,6 @@ import {
   DEFAULT_PREPARE_CONCURRENCY,
   groupPendingConflictsByPlan,
   mapWithConcurrency,
-  metadataContextFromRemoteState,
   pathsToRemoveForPlan,
   type PullConflictEvent,
   type PullEntryStateManifestItem,
@@ -136,10 +135,7 @@ export class PullEntryStateApplier {
             ok: true as const,
             item: {
               state,
-              metadata: await decryptSyncMetadata(
-                state.encryptedMetadata,
-                metadataContextFromRemoteState(state),
-              ),
+              metadata: parseSyncedEntryMetadata(state.encryptedMetadata),
             },
           };
         } catch (error) {

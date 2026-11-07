@@ -3,7 +3,7 @@ import {
   type SyncContentRuntime,
   type SyncContentRuntimeDeps,
 } from "../core/content-runtime";
-import { createSyncCryptoContext, type SyncCryptoContext } from "../core/crypto";
+import { parseSyncedEntryMetadata } from "../core/content";
 import {
   buildLocalDeleteMutation,
   buildLocalUpsertMutation,
@@ -47,24 +47,18 @@ export class SyncLocalReconcileService {
 
   async reconcileOnce(): Promise<ReconcileOnceResult> {
     const store = this.requireStore();
-    const metadataCrypto = createSyncCryptoContext();
-    try {
-      return await retrySyncStateWork(async () => {
-        const snapshot = syncStateCoordinator(store).watch();
-        try {
-          return await this.reconcileWithMetadataCrypto(store, metadataCrypto, snapshot);
-        } finally {
-          snapshot.dispose();
-        }
-      });
-    } finally {
-      metadataCrypto.dispose();
-    }
+    return await retrySyncStateWork(async () => {
+      const snapshot = syncStateCoordinator(store).watch();
+      try {
+        return await this.reconcile(store, snapshot);
+      } finally {
+        snapshot.dispose();
+      }
+    });
   }
 
-  private async reconcileWithMetadataCrypto(
+  private async reconcile(
     store: SyncLocalReconcileStore,
-    metadataCrypto: Pick<SyncCryptoContext, "encryptMetadata" | "decryptMetadata">,
     prepared: SyncStateSnapshot,
   ): Promise<ReconcileOnceResult> {
     const localFiles = await this.deps.scanner.listFiles();
@@ -78,7 +72,6 @@ export class SyncLocalReconcileService {
     const remoteById = indexRemoteEntriesById(retained);
     const visibleRemoteByPath = indexVisibleRemoteEntriesByPath(retained);
     const pendingDeleteEntriesByPath = await this.indexPendingDeleteEntriesByPath(
-      metadataCrypto,
       retained,
     );
     const renameCandidates = new Map<string, LocalSyncEntryRow[]>();
@@ -172,8 +165,7 @@ export class SyncLocalReconcileService {
         : visibleRemoteByPath.get(file.path) ?? null;
       const entryId = entry?.entryId ?? remote?.entryId ?? crypto.randomUUID();
 
-      const queued = await buildLocalUpsertMutation({
-        metadataCrypto,
+      const queued = buildLocalUpsertMutation({
         path: file.path,
         entryId,
         base: remote,
@@ -224,8 +216,7 @@ export class SyncLocalReconcileService {
       }
 
       const deletedPath = entry.path;
-      const mutation = await buildLocalDeleteMutation({
-        metadataCrypto,
+      const mutation = buildLocalDeleteMutation({
         entryId: entry.entryId,
         base: remote,
         path: deletedPath,
@@ -302,7 +293,6 @@ export class SyncLocalReconcileService {
   }
 
   private async indexPendingDeleteEntriesByPath(
-    metadataCrypto: Pick<SyncCryptoContext, "decryptMetadata">,
     entries: SyncReconcileEntryState[],
   ): Promise<Map<string, LocalSyncEntryRow>> {
     const result = new Map<string, LocalSyncEntryRow>();
@@ -313,12 +303,7 @@ export class SyncLocalReconcileService {
         continue;
       }
 
-      const metadata = await metadataCrypto.decryptMetadata(pending.encryptedMetadata, {
-        entryId: pending.entryId,
-        revision: pending.baseRevision + 1,
-        op: pending.op,
-        blobId: pending.blobId,
-      });
+      const metadata = parseSyncedEntryMetadata(pending.encryptedMetadata);
       const pendingEntry = entry.local;
       if (pendingEntry) {
         result.set(metadata.path, pendingEntry);

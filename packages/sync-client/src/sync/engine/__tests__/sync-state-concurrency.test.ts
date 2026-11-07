@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createTestContentRuntime } from "../../../test-support/content-runtime";
 import { createTestSyncStore } from "../../../test-support/in-memory-sync-store";
-import { decryptSyncMetadata } from "../../core/crypto";
+import { parseSyncedEntryMetadata } from "../../core/content";
 import { SyncEventRecorder } from "../event-recorder";
 import { SyncPullService } from "../pull-service";
 import { SyncPushService } from "../push-service";
@@ -53,9 +53,7 @@ async function expectMerged(test: Awaited<ReturnType<typeof fixture>>, body = "R
   expect((await test.store.getRemoteStateById("note"))?.revision).toBe(3);
   const pending = await test.store.getDirtyEntryMutation("note");
   expect(pending).toMatchObject({ baseRevision: 3, hash: await hashText(body) });
-  expect(await decryptSyncMetadata(pending!.encryptedMetadata, {
-    entryId: "note", revision: 4, op: "upsert", blobId: pending!.blobId,
-  })).toEqual({ path: "note.md", hash: await hashText(body) });
+  expect(parseSyncedEntryMetadata(pending!.encryptedMetadata)).toEqual({ path: "note.md", hash: await hashText(body) });
 }
 
 describe("local edits overlapping remote sync", () => {
@@ -188,9 +186,7 @@ describe("local edits overlapping remote sync", () => {
     const pending = await test.store.getDirtyEntryMutation("note");
     expect(pending).toMatchObject({ baseRevision: 3, hash: await hashText(newer) });
     expect(test.adapter.text("note.md")).toBe(newer);
-    await expect(decryptSyncMetadata(pending!.encryptedMetadata, {
-      entryId: "note", revision: 4, op: "upsert", blobId: pending!.blobId,
-    })).resolves.toEqual({ path: "note.md", hash: await hashText(newer) });
+    expect(parseSyncedEntryMetadata(pending!.encryptedMetadata)).toEqual({ path: "note.md", hash: await hashText(newer) });
   });
   it("orders rename and delete even when the destination has no owner yet", async () => {
     const test = await fixture();
@@ -210,9 +206,7 @@ describe("local edits overlapping remote sync", () => {
     expect(await test.store.getLocalStateById("note")).toMatchObject({ path: null, deleted: true });
     expect(await test.store.listDirtyEntries()).toMatchObject([{ entryId: "note", op: "delete", baseRevision: 2 }]);
     const pending = (await test.store.getDirtyEntryMutation("note"))!;
-    await expect(decryptSyncMetadata(pending.encryptedMetadata, {
-      entryId: "note", revision: 3, op: "delete", blobId: null,
-    })).resolves.toEqual({ path: "renamed.md", hash: null });
+    expect(parseSyncedEntryMetadata(pending.encryptedMetadata)).toEqual({ path: "renamed.md", hash: null });
   });
 
   it("bounds replanning during continuous filesystem edits and leaves the cursor unchanged", async () => {

@@ -2,7 +2,7 @@ import {
   type SyncContentRuntime,
   type SyncContentRuntimeDeps,
 } from "../core/content-runtime";
-import { decryptSyncMetadata } from "../core/crypto";
+import { parseSyncedEntryMetadata } from "../core/content";
 import type { SyncEventGateLike } from "./event-gate";
 import {
   queueLocalDeleteMutation,
@@ -311,15 +311,7 @@ export class SyncEventRecorder {
         continue;
       }
 
-      const metadata = await decryptSyncMetadata(
-        pending.encryptedMetadata,
-        {
-          entryId: pending.entryId,
-          revision: pending.baseRevision + 1,
-          op: pending.op,
-          blobId: pending.blobId,
-        },
-      );
+      const metadata = parseSyncedEntryMetadata(pending.encryptedMetadata);
       if (metadata.path !== path) {
         continue;
       }

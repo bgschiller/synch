@@ -4,7 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { InMemorySyncStore } from "@synch/sync-client/testing";
-import { encryptSyncMetadata } from "@synch/sync-client/core";
+import { serializeSyncedEntryMetadata } from "@synch/sync-client/core";
 import type {
   AcceptedPushMutationRow,
   PendingMutationRow,
@@ -48,10 +48,7 @@ async function makePendingUpsert(
     baseRevision,
     blobId,
     hash,
-    encryptedMetadata: await encryptSyncMetadata(
-      { path: filePath, hash },
-      { entryId, revision: baseRevision + 1, op: "upsert", blobId },
-    ),
+    encryptedMetadata: serializeSyncedEntryMetadata({ path: filePath, hash }),
     createdAt: overrides.createdAt ?? Date.now(),
     ...overrides,
   };

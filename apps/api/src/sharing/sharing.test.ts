@@ -45,7 +45,7 @@ async function setup() {
 	for (const id of ["vault-a", "vault-b"]) {
 		await db
 			.insert(s.vault)
-			.values({ id, organizationId: "org", name: id, activeKeyVersion: 1 });
+			.values({ id, organizationId: "org", name: id });
 		await db.insert(s.vaultMembership).values({
 			vaultId: id,
 			userId: "owner",
@@ -156,7 +156,6 @@ describe("organization vault sharing", () => {
 				id: "foreign-vault",
 				organizationId: "other-org",
 				name: "Foreign",
-				activeKeyVersion: 1,
 			});
 		await db
 			.insert(s.vaultMembership)

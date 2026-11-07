@@ -4,7 +4,6 @@ import type {
   SyncContentRuntimeDeps,
 } from "../core/content-runtime";
 import type { SyncedEntryMetadata } from "../core/content";
-import type { SyncCryptoContext } from "../core/crypto";
 import type { CommitMutationPayload } from "../remote/realtime-client";
 import type {
   SyncBlobStore,
@@ -17,7 +16,6 @@ import type {
 import type { PushBlobRetryCache } from "./push-blob-retry-cache";
 
 export interface PushMutationCommitterDeps extends SyncContentRuntimeDeps {
-  getSyncCryptoContext?: () => SyncCryptoContext;
   fileReader: LocalFileReader;
   conflictFileWriter?: ConflictFileWriter;
   blobClient: Pick<SyncBlobClient, "uploadBlob">;

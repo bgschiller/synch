@@ -87,7 +87,10 @@ it("auto-enrolls members and drops key ceremony tables without touching other st
 		}
 		await db.insert(schema.member).values({ id: "personal-owner", userId: "owner", organizationId: "personal", role: "owner", createdAt: new Date() });
 		for (const id of ["shared", "unassigned", "personal"]) {
-			await db.insert(schema.vault).values({ id, name: id, organizationId: id === "personal" ? "personal" : "org", activeKeyVersion: 1, sharedAt: id === "shared" ? new Date(1) : null });
+			await client.execute({
+				sql: "INSERT INTO vault(id,organization_id,name,active_key_version,shared_at) VALUES (?,?,?,1,?)",
+				args: [id, id === "personal" ? "personal" : "org", id, id === "shared" ? 1 : null],
+			});
 		}
 		for (const id of ["owner", "existing", "revoked"]) {
 			await db.insert(schema.vaultMembership).values({ vaultId: "shared", userId: id, isCreator: id === "owner", status: id === "revoked" ? "revoked" : "active", accessVersion: id === "revoked" ? 4 : 1 });

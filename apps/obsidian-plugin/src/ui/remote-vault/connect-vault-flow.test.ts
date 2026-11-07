@@ -17,7 +17,7 @@ function setup() {
   const deps = {
     listLegacyVaults: vi.fn(async () => [{
       id: "legacy", name: "Personal notes", organizationId: "org",
-      activeKeyVersion: 1, createdAt: "2026-01-01T00:00:00.000Z",
+      createdAt: "2026-01-01T00:00:00.000Z",
     }]),
     manager: manager as unknown as SharingManager,
     isCurrentAccount: vi.fn(() => true),

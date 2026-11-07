@@ -195,24 +195,6 @@ export function pathsToRemoveForPlan(
     ? [plan.existing?.path] : [];
 }
 
-export function metadataContextFromRemoteState(state: RemoteEntryState) {
-  return {
-    entryId: state.entryId,
-    revision: state.revision,
-    op: state.deleted ? ("delete" as const) : ("upsert" as const),
-    blobId: state.blobId,
-  };
-}
-
-export function metadataContextFromPendingMutation(mutation: PendingMutationRow) {
-  return {
-    entryId: mutation.entryId,
-    revision: mutation.baseRevision + 1,
-    op: mutation.op,
-    blobId: mutation.blobId,
-  };
-}
-
 export function requireBlobId(state: RemoteEntryState): string {
   if (!state.blobId) {
     throw new Error(`Entry state ${state.entryId}@${state.revision} is missing a blob.`);

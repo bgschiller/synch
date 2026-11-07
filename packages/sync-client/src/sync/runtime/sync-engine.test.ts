@@ -5,7 +5,6 @@ import { createTestSyncStore } from "../../test-support/in-memory-sync-store";
 import { InMemoryVaultAdapter } from "../../test-support/in-memory-vault-adapter";
 import { encodeUtf8, hashBytes } from "../core/content";
 import { SyncContentRuntime } from "../core/content-runtime";
-import { encryptSyncBlob } from "../core/crypto";
 import { DEFAULT_SYNC_FILE_RULES } from "../core/file-rules";
 import { DEFAULT_VAULT_CONFIG_SYNC_RULES } from "../core/vault-config-rules";
 import { queueLocalUpsertMutation } from "../core/mutation-queue";
@@ -435,10 +434,7 @@ describe("SyncEngine", () => {
     const store = createTestSyncStore();
     const remoteBytes = encodeUtf8("{\"theme\":\"remote\"}");
     const remoteHash = await hashBytes(remoteBytes);
-    const encryptedBytes = await encryptSyncBlob(
-      remoteBytes,
-      { blobId: "blob-config" },
-    );
+    const encryptedBytes = remoteBytes;
     vault.seedText(`${CONFIG_DIR}/app.json`, "{\"theme\":\"local\"}");
     await store.applyRemoteState({
       entryId: "entry-config",
@@ -487,10 +483,7 @@ describe("SyncEngine", () => {
     const localHash = await hashBytes(localBytes);
     const remoteBytes = encodeUtf8("{\"theme\":\"new\"}");
     const remoteHash = await hashBytes(remoteBytes);
-    const encryptedBytes = await encryptSyncBlob(
-      remoteBytes,
-      { blobId: "blob-config-new" },
-    );
+    const encryptedBytes = remoteBytes;
     vault.seedFile(`${CONFIG_DIR}/app.json`, localBytes);
     await store.upsertEntry({
       entryId: "entry-config",

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createTestContentRuntime } from "../../../../test-support/content-runtime";
 import { createTestSyncStore } from "../../../../test-support/in-memory-sync-store";
-import { decryptSyncMetadata } from "../../../core/crypto";
+import { parseSyncedEntryMetadata } from "../../../core/content";
 import { SyncPullService } from "../../pull-service";
 import {
   arrangePendingUpsertWithCachedBase, createBlobClient, createCommit,
@@ -49,9 +49,7 @@ describe("targeted stale entry recovery", () => {
     const pending = await test.store.getDirtyEntryMutation("note");
     expect(pending).toMatchObject({ baseRevision: 3, baseBlobId: "remote" });
     expect(test.adapter.text("note.md")).toBe("Remote title\n\nlocal line\n");
-    expect(await decryptSyncMetadata(pending!.encryptedMetadata, {
-      entryId: "note", revision: 4, op: "upsert", blobId: pending!.blobId,
-    })).toMatchObject({ path: "note.md", hash: await hashText("Remote title\n\nlocal line\n") });
+    expect(parseSyncedEntryMetadata(pending!.encryptedMetadata)).toMatchObject({ path: "note.md", hash: await hashText("Remote title\n\nlocal line\n") });
     // Cursor 101 may include unrelated changes that recovery has not applied.
     expect(await test.store.getCursor()).toBe(100);
     expect(test.adapter.text("other.md")).toBe("keep me");

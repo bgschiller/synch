@@ -63,7 +63,6 @@ export function mockOnlineReadinessRequests(): void {
             vault: {
               id: "vault-1",
               name: "Recovered",
-              activeKeyVersion: 1,
               createdAt: "2026-04-22T00:00:00.000Z",
             },
           },

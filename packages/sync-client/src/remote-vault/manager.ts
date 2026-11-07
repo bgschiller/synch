@@ -121,7 +121,6 @@ export class RemoteVaultManager {
         vaultId: bootstrap.vault.id,
         organizationId: bootstrap.vault.organizationId,
         vaultName: bootstrap.vault.name,
-        activeKeyVersion: bootstrap.vault.activeKeyVersion,
         bootstrappedAt: new Date().toISOString(),
       },
     };
@@ -211,7 +210,6 @@ export class RemoteVaultManager {
       vaultId: bootstrap.vault.id,
       organizationId: bootstrap.vault.organizationId,
       vaultName: bootstrap.vault.name,
-      activeKeyVersion: bootstrap.vault.activeKeyVersion,
       bootstrappedAt: new Date().toISOString(),
     };
 

@@ -2,7 +2,6 @@ export type VaultRecord = {
 	id: string;
 	organizationId: string;
 	name: string;
-	activeKeyVersion: number;
 	createdAt: Date;
 	deletedAt: Date | null;
 	purgeStatus: "queued" | "running" | "failed" | null;

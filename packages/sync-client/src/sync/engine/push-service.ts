@@ -8,10 +8,6 @@ import {
   type SyncContentRuntime,
   type SyncContentRuntimeDeps,
 } from "../core/content-runtime";
-import {
-  createSyncCryptoContext,
-  type SyncCryptoContext,
-} from "../core/crypto";
 import type { SyncTokenResponse } from "../remote/client";
 import type {
   CommitMutationBatchResult,
@@ -142,11 +138,8 @@ export class SyncPushService {
     let stopAfterCurrentBatch = false;
     let stopReason: PushPendingMutationsResult["stopReason"];
 
-    const syncCryptoContext = createSyncCryptoContext();
-    const mutationCommitter = this.createMutationCommitter(
-      syncCryptoContext,
-    );
-    try {
+    const mutationCommitter = this.createMutationCommitter();
+    {
       for await (const preparedMutations of this.preparePendingMutations(
         mutationCommitter,
         store,
@@ -355,8 +348,6 @@ export class SyncPushService {
       shouldPullAfterPush =
         shouldPullAfterPush ||
         acceptedCursors.some((acceptedCursor) => acceptedCursor > checkpointCursor);
-    } finally {
-      syncCryptoContext.dispose();
     }
 
     if (requeueLimitReached && !shouldYield() && !shouldPullAfterPush) {
@@ -415,11 +406,8 @@ export class SyncPushService {
     return unblocked;
   }
 
-  private createMutationCommitter(
-    syncCryptoContext: SyncCryptoContext,
-  ): PushMutationCommitter {
+  private createMutationCommitter(): PushMutationCommitter {
     return new PushMutationCommitter({
-      getSyncCryptoContext: () => syncCryptoContext,
       fileReader: this.deps.fileReader,
       conflictFileWriter: this.deps.conflictFileWriter,
       blobClient: this.deps.blobClient,

@@ -1,8 +1,7 @@
 import { createTestContentRuntime } from "../../../../test-support/content-runtime";
 import { describe, expect, it } from "vitest";
 
-import { encodeUtf8, hashBytes } from "../../../core/content";
-import { decryptSyncBlob, decryptSyncMetadata } from "../../../core/crypto";
+import { encodeUtf8, hashBytes, parseSyncedEntryMetadata } from "../../../core/content";
 import type { CommitMutationPayload } from "../../../remote/realtime-client";
 import { createTestSyncStore } from "../../../../test-support/in-memory-sync-store";
 import { SyncPushService } from "../../push-service";
@@ -11,7 +10,6 @@ import {
   createToken,
   encryptMutationMetadata,
   ignoreProgress,
-  metadataContextFromPayload,
   unusedBlobClient,
 } from "./helpers";
 
@@ -139,17 +137,10 @@ describe("SyncPushService drain: basic queue", () => {
       "completed:delete:Folder/deleted.md:3",
     ]);
     expect(new TextDecoder().decode(uploaded[0]?.bytes ?? new Uint8Array())).toBe("new body");
-    await expect(
-      decryptSyncBlob(uploaded[0]?.bytes ?? new Uint8Array(), {
-        blobId: uploaded[0]?.blobId ?? "",
-      }),
-    ).resolves.toEqual(new TextEncoder().encode("new body"));
-    await expect(
-      decryptSyncMetadata(
-        committed[0]?.encryptedMetadata ?? "",
-        metadataContextFromPayload(committed[0]),
-      ),
-    ).resolves.toEqual({
+    expect(uploaded[0]?.bytes ?? new Uint8Array()).toEqual(
+      new TextEncoder().encode("new body"),
+    );
+    expect(parseSyncedEntryMetadata(committed[0]?.encryptedMetadata ?? "")).toEqual({
       path: "Folder/new.md",
       hash: upsertHash,
     });

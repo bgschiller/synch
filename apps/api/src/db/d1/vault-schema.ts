@@ -19,7 +19,6 @@ export const vault = sqliteTable("vault", {
 		.references(() => organization.id, { onDelete: "cascade" }),
 	name: text("name").notNull(),
 	sharedAt: integer("shared_at", { mode: "timestamp_ms" }),
-	activeKeyVersion: integer("active_key_version").notNull(),
 	createdAt: integer("created_at", { mode: "timestamp_ms" })
 		.default(sqliteEpochMsNow)
 		.notNull(),

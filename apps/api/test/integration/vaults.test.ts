@@ -22,7 +22,6 @@ describe("vault integration", () => {
 				id: string;
 				organizationId: string;
 				name: string;
-				activeKeyVersion: number;
 			}>;
 		}>("/v1/vaults", {
 			headers: {
@@ -39,16 +38,13 @@ describe("vault integration", () => {
 		expect(
 			listed.json?.vaults.find((vault) => vault.id === primary.vaultId)?.organizationId,
 		).toBe(primary.organizationId);
-		expect(
-			listed.json?.vaults.find((vault) => vault.id === primary.vaultId)?.activeKeyVersion,
-		).toBe(1);
 	});
 
 	it("returns the bootstrap response without key wrappers", async () => {
 		const primary = await signUpAndCreateVault();
 
 		const bootstrap = await jsonRequest<{
-			vault: { id: string; organizationId: string; name: string; activeKeyVersion: number };
+			vault: { id: string; organizationId: string; name: string };
 		}>(`/v1/vaults/${encodeURIComponent(primary.vaultId)}/bootstrap`, {
 			headers: {
 				cookie: primary.sessionCookie,
@@ -59,7 +55,6 @@ describe("vault integration", () => {
 		expect(bootstrap.json?.vault.id).toBe(primary.vaultId);
 		expect(bootstrap.json?.vault.organizationId).toBe(primary.organizationId);
 		expect(bootstrap.json?.vault.name).toBe(primary.vaultName);
-		expect(bootstrap.json?.vault.activeKeyVersion).toBe(1);
 		// Vaults no longer have a password, so the bootstrap response has no
 		// key wrappers.
 		expect(bootstrap.json).not.toHaveProperty("wrappers");
@@ -283,7 +278,7 @@ describe("vault integration", () => {
 		await addOrganizationMember(primary.organizationId, secondary.userId);
 
 		const listed = await jsonRequest<{
-			vaults: Array<{ id: string; name: string; activeKeyVersion: number }>;
+			vaults: Array<{ id: string; name: string }>;
 		}>("/v1/vaults", {
 			headers: {
 				cookie: secondary.sessionCookie,

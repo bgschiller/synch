@@ -67,7 +67,6 @@ export function remoteVaultSummary(
     id: "vault-remote",
     organizationId: "org-1",
     name: "Remote",
-    activeKeyVersion: 1,
     createdAt: "2026-04-22T00:00:00.000Z",
     ...overrides,
   };

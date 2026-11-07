@@ -3,11 +3,7 @@ import {
   type ContentReservation,
 } from "../core/content-runtime";
 import { getAvailableConflictCopyPath } from "../core/conflict-file";
-import {
-  decryptSyncBlob,
-  decryptSyncMetadata,
-  encryptSyncMetadata,
-} from "../core/crypto";
+import { parseSyncedEntryMetadata, serializeSyncedEntryMetadata } from "../core/content";
 import type {
   PendingMutationRow,
   SyncEntryStateRow,
@@ -18,7 +14,6 @@ import {
 } from "../vault/vault-writer";
 import {
   decodeUtf8,
-  metadataContextFromPendingMutation,
   type PlannedEntryState,
   type PreparedEntryBlob,
   type PreparedPendingConflict,
@@ -50,10 +45,7 @@ export class PullPendingMutationHandler {
       return null;
     }
 
-    const metadata = await decryptSyncMetadata(
-      pending.encryptedMetadata,
-      metadataContextFromPendingMutation(pending),
-    );
+    const metadata = parseSyncedEntryMetadata(pending.encryptedMetadata);
     if (
       await isSameEntryPendingMutationAlreadyRemote(
         pending,
@@ -236,10 +228,7 @@ export class PullPendingMutationHandler {
     }
 
     reservation?.retain(cachedBase.encryptedBytes.byteLength * 8);
-    const baseBytes = await decryptSyncBlob(
-      cachedBase.encryptedBytes,
-      { blobId: base.blobId },
-    );
+    const baseBytes = cachedBase.encryptedBytes;
 
     return await this.contentRuntime.withReadBytes(
       await this.deps.vaultAdapter.getFileSize(localPath),
@@ -272,18 +261,10 @@ export class PullPendingMutationHandler {
           blobId,
           hash: mergedHash,
           path: finalPath,
-          encryptedMetadata: await encryptSyncMetadata(
-            {
-              path: finalPath,
-              hash: mergedHash,
-            },
-            {
-              entryId: entryState.entryId,
-              revision: plan.state.revision + 1,
-              op: "upsert",
-              blobId,
-            },
-          ),
+          encryptedMetadata: serializeSyncedEntryMetadata({
+            path: finalPath,
+            hash: mergedHash,
+          }),
         };
       },
       reservation,
@@ -312,10 +293,7 @@ export class PullPendingMutationHandler {
     }
 
     for (const pending of await store.listDirtyEntries()) {
-      const metadata = await decryptSyncMetadata(
-        pending.encryptedMetadata,
-        metadataContextFromPendingMutation(pending),
-      );
+      const metadata = parseSyncedEntryMetadata(pending.encryptedMetadata);
       if (candidatePaths.has(metadata.path)) {
         return pending;
       }

@@ -1,4 +1,4 @@
-import { decryptSyncMetadata, encryptSyncMetadata } from "@synch/sync-client/core";
+import { parseSyncedEntryMetadata, serializeSyncedEntryMetadata } from "@synch/sync-client/core";
 import type { PendingMutationRow } from "@synch/sync-client/store";
 import { SyncDexieDatabase, syncStoreDbName, METADATA_ID } from "./dexie-store/database";
 import { describe, expect, it } from "vitest";
@@ -546,9 +546,7 @@ describe("DexieSyncStore", () => {
       const pending: PendingMutationRow = {
         entryId: "note", mutationId: "newer-edit", op: "upsert", baseRevision: remoteRevision,
         baseBlobId: "remote", baseHash: "remote-hash", blobId: "new-local", hash: "new-hash", createdAt: 20,
-        encryptedMetadata: await encryptSyncMetadata({ path, hash: "new-hash" }, {
-          entryId: "note", revision: remoteRevision + 1, op: "upsert", blobId: "new-local",
-        }),
+        encryptedMetadata: serializeSyncedEntryMetadata({ path, hash: "new-hash" }),
       };
       await store.replaceDirtyEntry(pending);
       await store.applyLocalState({
@@ -566,9 +564,7 @@ describe("DexieSyncStore", () => {
       expect(after?.dirty).toMatchObject({ mutationId: "newer-edit", baseRevision: remoteRevision, hash: "new-hash" });
       if (remoteRevision === 4) expect(after).toEqual(before);
       const dirty = after!.dirty!;
-      await expect(decryptSyncMetadata(dirty.encryptedMetadata, {
-        entryId: "note", revision: remoteRevision + 1, op: "upsert", blobId: "new-local",
-      })).resolves.toEqual({ path, hash: "new-hash" });
+      expect(parseSyncedEntryMetadata(dirty.encryptedMetadata)).toEqual({ path, hash: "new-hash" });
     } finally {
       await store.close();
     }

@@ -1,9 +1,9 @@
 
-import { decryptSyncMetadata, encryptSyncMetadata } from "../../../core/crypto";
+import { parseSyncedEntryMetadata, serializeSyncedEntryMetadata } from "../../../core/content";
 import type { SyncStore } from "../../../store/store";
 
 
-export function decryptPendingMetadata(
+export async function decryptPendingMetadata(
   pending:
     | {
         entryId: string;
@@ -19,12 +19,7 @@ export function decryptPendingMetadata(
     throw new Error("missing pending mutation");
   }
 
-  return decryptSyncMetadata(pending.encryptedMetadata, {
-    entryId: pending.entryId,
-    revision: pending.baseRevision + 1,
-    op: pending.op,
-    blobId: pending.blobId,
-  });
+  return parseSyncedEntryMetadata(pending.encryptedMetadata);
 }
 
 export async function encryptTestMetadata(input: {
@@ -36,18 +31,10 @@ export async function encryptTestMetadata(input: {
   hash?: string;
 }) {
   const hash = input.op === "delete" ? null : requireHash(input.hash);
-  return await encryptSyncMetadata(
-    {
-      path: input.path,
-      hash,
-    },
-    {
-      entryId: input.entryId,
-      revision: input.revision,
-      op: input.op,
-      blobId: input.blobId,
-    },
-  );
+  return serializeSyncedEntryMetadata({
+    path: input.path,
+    hash,
+  });
 }
 
 export async function putTestBaseBlob(

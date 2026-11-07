@@ -3,7 +3,6 @@ import {
   type ContentReservation,
   type SyncContentRuntimeDeps,
 } from "../core/content-runtime";
-import { createSyncCryptoContext, decryptSyncBlob } from "../core/crypto";
 import type { SyncTokenResponse } from "../remote/client";
 import type { RemoteEntryState } from "../remote/changes";
 import type { SyncBlobClient } from "../remote/blob-client";
@@ -110,19 +109,14 @@ export class PullBlobPreparer {
     }
 
     const blobId = requireBlobId(plan.state);
-    const syncCrypto = createSyncCryptoContext();
-    try {
-      await store.putBlob({
-        blobId,
-        hash: expectedHash,
-        encryptedBytes: await syncCrypto.encryptBlob(hashed.bytes, { blobId }),
-        role: "remote",
-        refEntryId: plan.state.entryId,
-        cachedAt: Date.now(),
-      });
-    } finally {
-      syncCrypto.dispose();
-    }
+    await store.putBlob({
+      blobId,
+      hash: expectedHash,
+      encryptedBytes: hashed.bytes,
+      role: "remote",
+      refEntryId: plan.state.entryId,
+      cachedAt: Date.now(),
+    });
   }
 
   private async downloadEntryBlob(
@@ -153,10 +147,7 @@ export class PullBlobPreparer {
     // Envelope, plaintext and transient crypto/cache copies. For legacy servers
     // this updates admission only after the full HTTP body has arrived.
     reservation?.retain(encryptedBytes.byteLength * 3);
-    let bytes = await decryptSyncBlob(
-      encryptedBytes,
-      { blobId },
-    );
+    let bytes = encryptedBytes;
     const hashed = await this.contentRuntime.hashAndReturnBytes(bytes);
     bytes = hashed.bytes;
     const actualHash = hashed.hash;
@@ -169,10 +160,9 @@ export class PullBlobPreparer {
       await store.putBlob({
         blobId,
         hash: actualHash,
-        // Identity crypto makes `decryptSyncBlob` return `encryptedBytes`
-        // unchanged, so `hashAndReturnBytes` transfers (detaches) the very
-        // buffer `encryptedBytes` references. Store the returned buffer, whose
-        // content is identical, so the cache is never a detached view.
+        // `hashAndReturnBytes` transfers (detaches) the buffer `encryptedBytes`
+        // references. Store the returned buffer, whose content is identical, so
+        // the cache is never a detached view.
         encryptedBytes: bytes,
         role: "remote",
         refEntryId: plan.state.entryId,

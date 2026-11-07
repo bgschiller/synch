@@ -1,10 +1,6 @@
 import { withSyncState } from "./sync-state-coordinator";
-import type { SyncedEntryMetadata } from "../core/content";
+import { parseSyncedEntryMetadata, type SyncedEntryMetadata } from "../core/content";
 import { writeConflictCopy } from "../core/conflict-file";
-import {
-  createSyncCryptoContext,
-  type SyncCryptoContext,
-} from "../core/crypto";
 import type { SyncTokenResponse } from "../remote/client";
 import {
   type CommitAcceptedResult,
@@ -19,7 +15,6 @@ import { PushMutationPreparer } from "./push-mutation-preparer";
 import {
   isLocalAheadStaleRevision,
   isPullResolvableStaleRevision,
-  metadataContextFromMutation,
 } from "./push-mutation-shared";
 import { isAutoMergeTextPath } from "./text-merge-policy";
 import type {
@@ -44,7 +39,6 @@ export type {
 
 export class PushMutationCommitter {
   private readonly mutationPreparer: PushMutationPreparer;
-  private fallbackCryptoContext: SyncCryptoContext | null = null;
 
   constructor(private readonly deps: PushMutationCommitterDeps) {
     this.mutationPreparer = new PushMutationPreparer(deps);
@@ -146,10 +140,7 @@ export class PushMutationCommitter {
       return null;
     }
 
-    const metadata = await this.getSyncCryptoContext().decryptMetadata(
-      mutation.encryptedMetadata,
-      metadataContextFromMutation(mutation),
-    );
+    const metadata = parseSyncedEntryMetadata(mutation.encryptedMetadata);
     return await withSyncState(store, { entryIds: [mutation.entryId], paths: [metadata.path] }, async () => {
       const current = await store.getDirtyEntryMutation(mutation.entryId);
       if (current?.mutationId !== mutation.mutationId || current.baseRevision !== mutation.baseRevision) {
@@ -184,15 +175,6 @@ export class PushMutationCommitter {
     }
     this.deps.remotelyStagedBlobIds.delete(blobId);
     this.deps.blobRetryCache?.delete(blobId);
-  }
-
-  private getSyncCryptoContext(): SyncCryptoContext {
-    if (this.deps.getSyncCryptoContext) {
-      return this.deps.getSyncCryptoContext();
-    }
-
-    this.fallbackCryptoContext ??= createSyncCryptoContext();
-    return this.fallbackCryptoContext;
   }
 
   private async writeConflictCopy(path: string, bytes: Uint8Array): Promise<string> {

@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 
 import { SyncPullService } from "../../pull-service";
 import { isPortableVaultPath } from "../../../core/portable-path";
-import { decryptSyncBlob } from "../../../core/crypto";
 import {
   createDefaultContentHasher,
   hashBytes,
@@ -86,9 +85,7 @@ describe("SyncPullService detached ArrayBuffer regression", () => {
     // cached bytes still decrypt proves the stored buffer is intact.
     const cached = await store.getBlob(blobId);
     expect(cached).not.toBeNull();
-    expect(
-      new TextDecoder().decode(await decryptSyncBlob(cached!.encryptedBytes, { blobId })),
-    ).toBe(body);
+    expect(new TextDecoder().decode(cached!.encryptedBytes)).toBe(body);
 
     await store.close();
   });

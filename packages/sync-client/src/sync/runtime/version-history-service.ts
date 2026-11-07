@@ -2,7 +2,7 @@ import {
   type SyncContentRuntime,
   type SyncContentRuntimeDeps,
 } from "../core/content-runtime";
-import { decryptSyncBlob, decryptSyncMetadata, encryptSyncMetadata } from "../core/crypto";
+import { parseSyncedEntryMetadata, serializeSyncedEntryMetadata } from "../core/content";
 import type { SyncTokenResponse } from "../remote/client";
 import type { SyncBlobClient } from "../remote/blob-client";
 import type {
@@ -114,15 +114,7 @@ export class SyncVersionHistoryService {
       const page = await session.listDeletedEntries({ before, limit });
       const entries: SyncDeletedEntry[] = [];
       for (const entry of page.entries) {
-        const metadata = await decryptSyncMetadata(
-          entry.encryptedMetadata,
-          {
-            entryId: entry.entryId,
-            revision: entry.revision,
-            op: "delete",
-            blobId: null,
-          },
-        );
+        const metadata = parseSyncedEntryMetadata(entry.encryptedMetadata);
         entries.push({
           entryId: entry.entryId,
           path: metadata.path,
@@ -296,24 +288,8 @@ export class SyncVersionHistoryService {
     entry: RestorableEntry,
     version: EntryVersion,
   ): Promise<RestoreEntryVersionPayload> {
-    const metadata = await decryptSyncMetadata(
-      version.encryptedMetadata,
-      {
-        entryId: entry.entryId,
-        revision: version.sourceRevision,
-        op: version.op,
-        blobId: version.blobId,
-      },
-    );
-    const encryptedMetadata = await encryptSyncMetadata(
-      metadata,
-      {
-        entryId: entry.entryId,
-        revision: entry.revision + 1,
-        op: version.op,
-        blobId: version.blobId,
-      },
-    );
+    const metadata = parseSyncedEntryMetadata(version.encryptedMetadata);
+    const encryptedMetadata = serializeSyncedEntryMetadata(metadata);
     return {
       entryId: entry.entryId,
       versionId: version.versionId,
@@ -339,24 +315,13 @@ export class SyncVersionHistoryService {
       };
     }
 
-    const metadata = await decryptSyncMetadata(
-      version.encryptedMetadata,
-      {
-        entryId,
-        revision: version.sourceRevision,
-        op: version.op,
-        blobId: version.blobId,
-      },
-    );
+    const metadata = parseSyncedEntryMetadata(version.encryptedMetadata);
     const token = await this.deps.getSyncToken();
     const encryptedBytes = await this.deps.blobClient.downloadBlob(
       token.vaultId,
       version.blobId,
     );
-    let bytes = await decryptSyncBlob(
-      encryptedBytes,
-      { blobId: version.blobId },
-    );
+    let bytes = encryptedBytes;
     const hashed = await this.contentRuntime.hashAndReturnBytes(bytes);
     bytes = hashed.bytes;
     const actualHash = hashed.hash;

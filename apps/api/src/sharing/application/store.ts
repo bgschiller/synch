@@ -2,7 +2,6 @@ export type SharingVault = {
 	id: string;
 	organizationId: string;
 	name: string;
-	activeKeyVersion: number;
 	sharedAt: Date | null;
 };
 export type SharingMembership = {

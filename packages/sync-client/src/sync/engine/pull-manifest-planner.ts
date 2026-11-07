@@ -1,9 +1,8 @@
-import type { SyncedEntryMetadata } from "../core/content";
+import { parseSyncedEntryMetadata, type SyncedEntryMetadata } from "../core/content";
 import {
   type ConflictFileWriter,
   getAvailableConflictCopyPath,
 } from "../core/conflict-file";
-import { decryptSyncMetadata } from "../core/crypto";
 import type { RemoteEntryState } from "../remote/changes";
 import type {
   SyncEntryRow,
@@ -15,7 +14,6 @@ import type {
 import {
   type AdoptedLocalEntry,
   isDeferredByCursorThreshold,
-  metadataContextFromPendingMutation,
   type PlannedEntryState,
   type PullConflictEvent,
   type PullEntryStateManifestItem,
@@ -358,10 +356,7 @@ export class PullManifestPlanner {
       return null;
     }
 
-    const pendingMetadata = await decryptSyncMetadata(
-      pending.encryptedMetadata,
-      metadataContextFromPendingMutation(pending),
-    );
+    const pendingMetadata = parseSyncedEntryMetadata(pending.encryptedMetadata);
     if (pendingMetadata.path !== metadata.path || !pendingMetadata.hash) {
       return null;
     }

@@ -2,7 +2,6 @@ import { createTestContentRuntime } from "../../../../test-support/content-runti
 import { describe, expect, it } from "vitest";
 
 import { encodeUtf8, hashBytes } from "../../../core/content";
-import { decryptSyncBlob } from "../../../core/crypto";
 import type { CommitMutationPayload } from "../../../remote/realtime-client";
 import { SyncRealtimeError } from "../../../remote/realtime-client";
 import { createTestSyncStore } from "../../../../test-support/in-memory-sync-store";
@@ -276,11 +275,7 @@ describe("SyncPushService requeue and batches", () => {
     expect(uploaded).toHaveLength(1);
     expect(uploaded[0]?.blobId).toBe(committed[0]?.blobId);
     expect(await store.getCursor()).toBe(1);
-    await expect(
-      decryptSyncBlob(uploaded[0]?.bytes ?? new Uint8Array(), {
-        blobId: uploaded[0]?.blobId ?? "",
-      }),
-    ).resolves.toEqual(new TextEncoder().encode("current body"));
+    expect(uploaded[0]?.bytes ?? new Uint8Array()).toEqual(new TextEncoder().encode("current body"));
     expect(await store.listDirtyEntries()).toEqual([]);
     expect(await store.getEntryByPath("Folder/note.md")).toEqual({
       entryId: "entry-note",

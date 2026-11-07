@@ -82,7 +82,6 @@ export class DrizzleVaultStore
 				id: schema.vault.id,
 				organizationId: schema.vault.organizationId,
 				name: schema.vault.name,
-				activeKeyVersion: schema.vault.activeKeyVersion,
 				sharedAt: schema.vault.sharedAt,
 				createdAt: schema.vault.createdAt,
 				deletedAt: schema.vault.deletedAt,
@@ -181,7 +180,7 @@ export class DrizzleVaultStore
 			this.db
 				.insert(schema.vault)
 				.select(
-					sql`SELECT ${vaultId}, ${organizationId}, ${name}, CASE WHEN (SELECT count(*) FROM member WHERE organization_id=${organizationId})>1 THEN ${now} ELSE null END, 1, ${now}, null, null, null
+					sql`SELECT ${vaultId}, ${organizationId}, ${name}, CASE WHEN (SELECT count(*) FROM member WHERE organization_id=${organizationId})>1 THEN ${now} ELSE null END, ${now}, null, null, null
           WHERE EXISTS (SELECT 1 FROM member WHERE organization_id=${organizationId} AND user_id=${userId} AND role IN ('owner','admin'))`,
 				)
 				.returning(),
@@ -378,7 +377,6 @@ export class DrizzleVaultStore
 				id: schema.vault.id,
 				organizationId: schema.vault.organizationId,
 				name: schema.vault.name,
-				activeKeyVersion: schema.vault.activeKeyVersion,
 				sharedAt: schema.vault.sharedAt,
 				createdAt: schema.vault.createdAt,
 				deletedAt: schema.vault.deletedAt,
@@ -414,7 +412,6 @@ function toVaultRecord(row: typeof schema.vault.$inferSelect): VaultRecord {
 		id: row.id,
 		organizationId: row.organizationId,
 		name: row.name,
-		activeKeyVersion: row.activeKeyVersion,
 		createdAt: row.createdAt,
 		deletedAt: row.deletedAt,
 		purgeStatus: isVaultPurgeStatus(row.purgeStatus) ? row.purgeStatus : null,

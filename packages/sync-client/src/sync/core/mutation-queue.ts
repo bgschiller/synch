@@ -1,4 +1,4 @@
-import { createSyncCryptoContext, type SyncCryptoContext } from "./crypto";
+import { serializeSyncedEntryMetadata } from "./content";
 import type { SyncMutationStore } from "../store/ports";
 import type { PendingMutationRow } from "../store/store";
 
@@ -36,31 +36,19 @@ export async function queueLocalUpsertMutation(
   store: PendingMutationWriter,
   input: QueueLocalUpsertMutationInput,
 ): Promise<QueuedLocalUpsertMutation> {
-  const metadataCrypto = createSyncCryptoContext();
-  try {
-    const queued = await buildLocalUpsertMutation({
-      ...input,
-      metadataCrypto,
-    });
-    await store.replaceDirtyEntry(queued.mutation, {
-      requireBaseBlob: input.requireBaseBlob,
-    });
+  const queued = buildLocalUpsertMutation(input);
+  await store.replaceDirtyEntry(queued.mutation, {
+    requireBaseBlob: input.requireBaseBlob,
+  });
 
-    return queued;
-  } finally {
-    metadataCrypto.dispose();
-  }
+  return queued;
 }
 
-export interface BuildLocalUpsertMutationInput
-  extends QueueLocalUpsertMutationInput {
-  metadataCrypto: Pick<SyncCryptoContext, "encryptMetadata">;
-}
+export type BuildLocalUpsertMutationInput = QueueLocalUpsertMutationInput;
 
-export async function buildLocalUpsertMutation({
-  metadataCrypto,
-  ...input
-}: BuildLocalUpsertMutationInput): Promise<QueuedLocalUpsertMutation> {
+export function buildLocalUpsertMutation(
+  input: BuildLocalUpsertMutationInput,
+): QueuedLocalUpsertMutation {
   const entryId = input.entryId;
   const baseRevision = input.base?.revision ?? 0;
   const blobId = createNextBlobId(input.previousLocal ?? input.base, input.hash);
@@ -73,18 +61,10 @@ export async function buildLocalUpsertMutation({
     baseHash: input.base?.hash ?? null,
     blobId,
     hash: input.hash,
-    encryptedMetadata: await metadataCrypto.encryptMetadata(
-      {
-        path: input.path,
-        hash: input.hash,
-      },
-      {
-        entryId,
-        revision: baseRevision + 1,
-        op: "upsert",
-        blobId,
-      },
-    ),
+    encryptedMetadata: serializeSyncedEntryMetadata({
+      path: input.path,
+      hash: input.hash,
+    }),
     createdAt: Date.now(),
   };
 
@@ -105,28 +85,16 @@ export async function queueLocalDeleteMutation(
   store: PendingMutationWriter,
   input: QueueLocalDeleteMutationInput,
 ): Promise<PendingMutationRow> {
-  const metadataCrypto = createSyncCryptoContext();
-  try {
-    const mutation = await buildLocalDeleteMutation({
-      ...input,
-      metadataCrypto,
-    });
-    await store.replaceDirtyEntry(mutation);
-    return mutation;
-  } finally {
-    metadataCrypto.dispose();
-  }
+  const mutation = buildLocalDeleteMutation(input);
+  await store.replaceDirtyEntry(mutation);
+  return mutation;
 }
 
-export interface BuildLocalDeleteMutationInput
-  extends QueueLocalDeleteMutationInput {
-  metadataCrypto: Pick<SyncCryptoContext, "encryptMetadata">;
-}
+export type BuildLocalDeleteMutationInput = QueueLocalDeleteMutationInput;
 
-export async function buildLocalDeleteMutation({
-  metadataCrypto,
-  ...input
-}: BuildLocalDeleteMutationInput): Promise<PendingMutationRow> {
+export function buildLocalDeleteMutation(
+  input: BuildLocalDeleteMutationInput,
+): PendingMutationRow {
   return {
     mutationId: crypto.randomUUID(),
     entryId: input.entryId,
@@ -136,18 +104,10 @@ export async function buildLocalDeleteMutation({
     baseHash: input.base.hash,
     blobId: null,
     hash: null,
-    encryptedMetadata: await metadataCrypto.encryptMetadata(
-      {
-        path: input.path,
-        hash: null,
-      },
-      {
-        entryId: input.entryId,
-        revision: input.base.revision + 1,
-        op: "delete",
-        blobId: null,
-      },
-    ),
+    encryptedMetadata: serializeSyncedEntryMetadata({
+      path: input.path,
+      hash: null,
+    }),
     createdAt: Date.now(),
   };
 }

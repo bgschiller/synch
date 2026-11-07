@@ -1,7 +1,7 @@
 
 import type { SyncTokenResponse } from "../../../remote/client";
 import type { ListEntryStatesResponse } from "../../../remote/changes";
-import { encryptSyncBlob, encryptSyncMetadata } from "../../../core/crypto";
+import { serializeSyncedEntryMetadata } from "../../../core/content";
 import { hashBytes } from "../../../core/content";
 import type { SyncEventGateLike } from "../../event-gate";
 import type { SyncBlobClient } from "../../../remote/blob-client";
@@ -72,18 +72,10 @@ export async function encryptRemoteMetadata(input: {
   hash?: string;
 }) {
   const hash = input.deleted ? null : requireHash(input.hash);
-  return await encryptSyncMetadata(
-    {
-      path: input.path,
-      hash,
-    },
-    {
-      entryId: input.entryId,
-      revision: input.revision,
-      op: input.deleted ? "delete" : "upsert",
-      blobId: input.blobId,
-    },
-  );
+  return serializeSyncedEntryMetadata({
+    path: input.path,
+    hash,
+  });
 }
 
 export async function encryptPendingMetadata(input: {
@@ -95,22 +87,14 @@ export async function encryptPendingMetadata(input: {
   hash?: string;
 }) {
   const hash = input.op === "delete" ? null : requireHash(input.hash);
-  return await encryptSyncMetadata(
-    {
-      path: input.path,
-      hash,
-    },
-    {
-      entryId: input.entryId,
-      revision: input.baseRevision + 1,
-      op: input.op,
-      blobId: input.blobId,
-    },
-  );
+  return serializeSyncedEntryMetadata({
+    path: input.path,
+    hash,
+  });
 }
 
-export async function encryptTestBlob(blobId: string, bytes: Uint8Array) {
-  return await encryptSyncBlob(bytes, { blobId });
+export async function encryptTestBlob(_blobId: string, bytes: Uint8Array) {
+  return bytes;
 }
 
 export async function hashText(value: string): Promise<string> {

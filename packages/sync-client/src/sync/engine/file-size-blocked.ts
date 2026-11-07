@@ -1,6 +1,5 @@
 import { isPortableVaultPath } from "../core/portable-path";
-import { decryptSyncMetadata } from "../core/crypto";
-import { metadataContextFromMutation } from "./push-mutation-shared";
+import { parseSyncedEntryMetadata } from "../core/content";
 import type { SyncStore } from "../store/store";
 import type { PendingMutationBlockedReason } from "../store/store";
 
@@ -27,10 +26,7 @@ export async function listBlockedSyncFiles(
       continue;
     }
 
-    const metadata = await decryptSyncMetadata(
-      mutation.encryptedMetadata,
-      metadataContextFromMutation(mutation),
-    );
+    const metadata = parseSyncedEntryMetadata(mutation.encryptedMetadata);
     files.push({
       path: metadata.path,
       reason: mutation.blockedReason ?? "file_too_large",

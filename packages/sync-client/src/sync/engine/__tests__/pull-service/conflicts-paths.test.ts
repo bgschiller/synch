@@ -1,7 +1,6 @@
 import { createTestContentRuntime } from "../../../../test-support/content-runtime";
 import { describe, expect, it } from "vitest";
 
-import { decryptSyncBlob } from "../../../core/crypto";
 import { SyncPullService } from "../../pull-service";
 import { createTestSyncStore } from "../../../../test-support/in-memory-sync-store";
 import {
@@ -676,11 +675,7 @@ describe("SyncPullService path conflicts", () => {
       blobId: "blob-remote",
       hash,
     });
-    expect(
-      await decryptSyncBlob(cachedRemote!.encryptedBytes, {
-        blobId: "blob-remote",
-      }),
-    ).toEqual(new TextEncoder().encode(body));
+    expect(cachedRemote!.encryptedBytes).toEqual(new TextEncoder().encode(body));
     expect(await store.listDirtyEntries()).toEqual([]);
     expect(conflicts).toEqual([]);
 

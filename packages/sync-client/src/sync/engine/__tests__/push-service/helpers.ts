@@ -1,12 +1,11 @@
 
 import type { SyncTokenResponse } from "../../../remote/client";
-import { encryptSyncMetadata } from "../../../core/crypto";
+import { serializeSyncedEntryMetadata } from "../../../core/content";
 import type { SyncStore } from "../../../store/store";
 import {
   SyncRealtimeError,
   type SyncRealtimeSession,
   type CommitMutationsResult,
-  type CommitMutationPayload,
 } from "../../../remote/realtime-client";
 
 
@@ -108,18 +107,10 @@ export async function encryptMutationMetadata(input: {
   hash?: string;
 }) {
   const hash = input.op === "delete" ? null : requireHash(input.hash);
-  return await encryptSyncMetadata(
-    {
-      path: input.path,
-      hash,
-    },
-    {
-      entryId: input.entryId,
-      revision: input.baseRevision + 1,
-      op: input.op,
-      blobId: input.blobId,
-    },
-  );
+  return serializeSyncedEntryMetadata({
+    path: input.path,
+    hash,
+  });
 }
 
 export async function putTestBaseBlob(
@@ -145,17 +136,4 @@ function requireHash(hash: string | undefined): string {
   }
 
   return hash;
-}
-
-export function metadataContextFromPayload(payload: CommitMutationPayload | undefined) {
-  if (!payload) {
-    throw new Error("missing committed payload");
-  }
-
-  return {
-    entryId: payload.entryId,
-    revision: payload.baseRevision + 1,
-    op: payload.op,
-    blobId: payload.blobId,
-  };
 }

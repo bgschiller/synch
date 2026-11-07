@@ -39,7 +39,6 @@ describe("RemoteVaultManager session state", () => {
             id: "vault-restored",
             organizationId: "org-1",
             name: "Restored",
-            activeKeyVersion: 1,
             createdAt: "2026-04-22T00:00:00.000Z",
           },
         }),

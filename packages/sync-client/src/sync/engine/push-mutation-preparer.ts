@@ -1,5 +1,5 @@
 import { SyncStateChangedError, syncStateCoordinator, withSyncState, type SyncStateSnapshot } from "./sync-state-coordinator";
-import type { SyncedEntryMetadata } from "../core/content";
+import { parseSyncedEntryMetadata, type SyncedEntryMetadata } from "../core/content";
 import {
   SyncBlobUploadError,
   type SyncBlobClient,
@@ -7,11 +7,6 @@ import {
 import {
   type SyncContentRuntime,
 } from "../core/content-runtime";
-import {
-  createSyncCryptoContext,
-  encryptedSyncBlobSize,
-  type SyncCryptoContext,
-} from "../core/crypto";
 import { queueLocalUpsertMutation } from "../core/mutation-queue";
 import type { SyncTokenResponse } from "../remote/client";
 import type { PendingMutationRow } from "../store/store";
@@ -20,17 +15,13 @@ import type {
   PushMutationCommitterDeps,
   PushMutationStore,
 } from "./push-mutation-types";
-import {
-  metadataContextFromMutation,
-  toCommitPayload,
-} from "./push-mutation-shared";
+import { toCommitPayload } from "./push-mutation-shared";
 import { isAutoMergeTextPath } from "./text-merge-policy";
 import { isPortableVaultPath } from "../core/portable-path";
 
 export class PushMutationPreparer {
   private readonly blobClient: Pick<SyncBlobClient, "uploadBlob">;
   private readonly contentRuntime: SyncContentRuntime;
-  private fallbackCryptoContext: SyncCryptoContext | null = null;
 
   constructor(private readonly deps: PushMutationCommitterDeps) {
     this.blobClient = deps.blobClient;
@@ -44,11 +35,7 @@ export class PushMutationPreparer {
     maxFileSizeBytes: number,
     onMetadataReady?: (metadata: SyncedEntryMetadata) => void,
   ): Promise<PreparePushMutationResult> {
-    const syncCrypto = this.getSyncCryptoContext();
-    const metadata = await syncCrypto.decryptMetadata(
-      mutation.encryptedMetadata,
-      metadataContextFromMutation(mutation),
-    );
+    const metadata = parseSyncedEntryMetadata(mutation.encryptedMetadata);
 
     onMetadataReady?.(metadata);
 
@@ -90,7 +77,7 @@ export class PushMutationPreparer {
         return null;
       }
       const blobId = mutation.blobId;
-      const encryptedSizeBytes = encryptedSyncBlobSize(bytes.byteLength);
+      const encryptedSizeBytes = bytes.byteLength;
       if (maxFileSizeBytes > 0 && encryptedSizeBytes > maxFileSizeBytes) {
         await this.blockOversizedUpsert(
           store,
@@ -109,7 +96,7 @@ export class PushMutationPreparer {
       const encryptedBytes = staged && !retainEncryptedBytes
         ? null
         : (staged ? this.deps.blobRetryCache?.get(mutation, token.vaultId) : null)
-          ?? await syncCrypto.encryptBlob(bytes, { blobId });
+          ?? bytes;
 
       if (!staged && encryptedBytes) {
         try {
@@ -177,15 +164,6 @@ export class PushMutationPreparer {
     }
 
     return (await store.getEntryById(mutation.entryId))?.localSize ?? 0;
-  }
-
-  private getSyncCryptoContext(): SyncCryptoContext {
-    if (this.deps.getSyncCryptoContext) {
-      return this.deps.getSyncCryptoContext();
-    }
-
-    this.fallbackCryptoContext ??= createSyncCryptoContext();
-    return this.fallbackCryptoContext;
   }
 
   private async blockOversizedUpsert(

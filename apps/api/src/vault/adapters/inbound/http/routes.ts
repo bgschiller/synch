@@ -22,7 +22,6 @@ export function registerVaultRoutes(
 				id: vault.id,
 				organizationId: vault.organizationId,
 				name: vault.name,
-				activeKeyVersion: vault.activeKeyVersion,
 				createdAt: vault.createdAt.toISOString(),
 				deletedAt: vault.deletedAt?.toISOString() ?? null,
 				deletionStatus: vault.purgeStatus,
@@ -52,7 +51,6 @@ export function registerVaultRoutes(
 						id: created.id,
 						organizationId: created.organizationId,
 						name: created.name,
-						activeKeyVersion: created.activeKeyVersion,
 						createdAt: created.createdAt.toISOString(),
 					},
 				},
@@ -91,7 +89,6 @@ export function registerVaultRoutes(
 					id: moved.id,
 					organizationId: moved.organizationId,
 					name: moved.name,
-					activeKeyVersion: moved.activeKeyVersion,
 					createdAt: moved.createdAt.toISOString(),
 				},
 			});
@@ -117,7 +114,6 @@ export function registerVaultRoutes(
 					id: bootstrap.vault.id,
 					organizationId: bootstrap.vault.organizationId,
 					name: bootstrap.vault.name,
-					activeKeyVersion: bootstrap.vault.activeKeyVersion,
 					createdAt: bootstrap.vault.createdAt.toISOString(),
 				},
 			});

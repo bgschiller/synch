@@ -1,4 +1,4 @@
-import { decryptSyncMetadata, encryptSyncMetadata } from "../core/crypto";
+import { parseSyncedEntryMetadata, serializeSyncedEntryMetadata } from "../core/content";
 import type {
   AcceptedPushMutationRow,
   CachedSyncBlobRow,
@@ -369,23 +369,12 @@ export async function planAcceptedPushApply(
     return { rebase: null };
   }
 
-  const pendingMetadata = await decryptSyncMetadata(
-    currentPending.encryptedMetadata,
-    metadataContextFromMutation(currentPending),
-  );
+  const pendingMetadata = parseSyncedEntryMetadata(currentPending.encryptedMetadata);
 
   return {
     rebase: {
       pendingMutationId: currentPending.mutationId,
-      encryptedMetadata: await encryptSyncMetadata(
-        pendingMetadata,
-        metadataContextFromMutation({
-          ...currentPending,
-          baseRevision: accepted.acceptedRevision,
-          baseBlobId: accepted.remoteBlobId,
-          baseHash: accepted.localHash,
-        }),
-      ),
+      encryptedMetadata: serializeSyncedEntryMetadata(pendingMetadata),
     },
   };
 }
@@ -461,13 +450,4 @@ function shouldApplyAcceptedPushToLocal(
     (row.localHash === accepted.mutation.hash &&
       row.localPath === accepted.metadata.path)
   );
-}
-
-function metadataContextFromMutation(mutation: PendingMutationRow) {
-  return {
-    entryId: mutation.entryId,
-    revision: mutation.baseRevision + 1,
-    op: mutation.op,
-    blobId: mutation.blobId,
-  };
 }

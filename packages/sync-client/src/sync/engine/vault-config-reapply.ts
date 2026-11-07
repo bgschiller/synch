@@ -1,6 +1,5 @@
 import { retrySyncStateWork, syncStateCoordinator, withSyncState } from "./sync-state-coordinator";
 import type { SyncContentRuntimeDeps } from "../core/content-runtime";
-import { decryptSyncBlob } from "../core/crypto";
 import { isPortableVaultPath } from "../core/portable-path";
 import {
   shouldSyncVaultConfigPath,
@@ -64,10 +63,9 @@ export async function reapplyAllowedRemoteVaultConfig(
         let bytes: Uint8Array | null = null;
         if (!remote.deleted) {
           if (!remote.blobId) return 0;
-          const hashed = await contentRuntime.hashAndReturnBytes(await decryptSyncBlob(
+          const hashed = await contentRuntime.hashAndReturnBytes(
             await deps.blobClient.downloadBlob(token.vaultId, remote.blobId),
-            { blobId: remote.blobId },
-          ));
+          );
           bytes = hashed.bytes;
           if (hashed.hash !== remote.hash) {
             throw new Error(`Remote vault config ${remote.entryId}@${remote.revision} hash does not match metadata.`);
@@ -88,8 +86,7 @@ export async function reapplyAllowedRemoteVaultConfig(
             if (bytes && remote.blobId) {
               await store.putBlob({
                 blobId: remote.blobId, hash: remote.hash,
-                // Identity crypto makes decrypt return the download unchanged,
-                // so hashing transfers (detaches) that buffer. Store the
+                // Hashing transfers (detaches) the download buffer. Store the
                 // returned buffer, whose content is identical, instead.
                 encryptedBytes: bytes,
                 role: "remote", refEntryId: remote.entryId, cachedAt: Date.now(),

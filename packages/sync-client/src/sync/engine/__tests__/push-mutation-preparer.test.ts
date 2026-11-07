@@ -6,7 +6,6 @@ import { createTestSyncStore } from "../../../test-support/in-memory-sync-store"
 import type { PendingMutationRow } from "../../store/store";
 import { PushMutationPreparer } from "../push-mutation-preparer";
 import { PushBlobRetryCache } from "../push-blob-retry-cache";
-import { createSyncCryptoContext, encryptedSyncBlobSize } from "../../core/crypto";
 import { SyncContentRuntime } from "../../core/content-runtime";
 import {
   createToken,
@@ -21,7 +20,6 @@ describe("PushMutationPreparer encrypted payload retention", () => {
         skipped: true,
         reason: "incompatible_path",
       });
-      expect(fixture.encrypt).not.toHaveBeenCalled();
       expect(fixture.upload).not.toHaveBeenCalled();
       expect(await fixture.store.getDirtyEntryMutation(fixture.mutation.entryId)).toMatchObject({
         status: "blocked",
@@ -103,10 +101,10 @@ describe("PushMutationPreparer encrypted payload retention", () => {
 });
 
 describe("PushMutationPreparer retries", () => {
-  it("bounds cached ciphertext and isolates vaults and metadata", async () => {
+  it("bounds cached payload bytes and isolates vaults and metadata", async () => {
     const fixture = await createRetryFixture("note.md");
     try {
-      const bytes = await fixture.crypto.encryptBlob(encodeUtf8("original"), { blobId: "blob" });
+      const bytes = encodeUtf8("original");
       const cache = new PushBlobRetryCache(fixture.contentRuntime, bytes.byteLength);
       const mutation = fixture.mutation;
       cache.put(mutation, "vault", bytes);
@@ -129,22 +127,19 @@ describe("PushMutationPreparer retries", () => {
   });
 
   it.each(["note.md", "image.png"])(
-    "reuses staged %s without encryption but still detects changed contents",
+    "reuses staged %s without re-upload but still detects changed contents",
     async (path) => {
       const fixture = await createRetryFixture(path);
       try {
         const first = await fixture.prepare();
         const retry = await fixture.prepare();
-        expect(fixture.encrypt).toHaveBeenCalledTimes(1);
         expect(fixture.upload).toHaveBeenCalledTimes(1);
         if (!first || "skipped" in first || !retry || "skipped" in retry) {
           throw new Error("expected prepared mutations");
         }
         if (path.endsWith(".md")) {
           expect(retry.encryptedBytes).toEqual(first.encryptedBytes);
-          expect(await fixture.crypto.decryptBlob(retry.encryptedBytes!, {
-            blobId: fixture.mutation.blobId!,
-          })).toEqual(encodeUtf8("original"));
+          expect(retry.encryptedBytes!).toEqual(encodeUtf8("original"));
         } else {
           expect(retry.encryptedBytes).toBeNull();
         }
@@ -166,30 +161,22 @@ describe("PushMutationPreparer retries", () => {
       await fixture.prepare();
       const retry = await fixture.prepare();
       expect(fixture.upload).toHaveBeenCalledTimes(1);
-      expect(fixture.encrypt).toHaveBeenCalledTimes(2);
       if (!retry || "skipped" in retry || !retry.encryptedBytes) {
         throw new Error("expected a merge base");
       }
-      expect(await fixture.crypto.decryptBlob(retry.encryptedBytes, {
-        blobId: fixture.mutation.blobId!,
-      })).toEqual(encodeUtf8("original"));
+      expect(retry.encryptedBytes).toEqual(encodeUtf8("original"));
     } finally {
       await fixture.dispose();
     }
   });
 
-  it("enforces the encrypted size boundary before encryption, including staged retries", async () => {
+  it("enforces the size boundary before upload, including staged retries", async () => {
     const fixture = await createRetryFixture("image.png");
     try {
-      const actual = await fixture.crypto.encryptBlob(encodeUtf8("original"), {
-        blobId: fixture.mutation.blobId!,
-      });
-      expect(encryptedSyncBlobSize(encodeUtf8("original").byteLength)).toBe(actual.byteLength);
-      fixture.encrypt.mockClear();
+      const actual = encodeUtf8("original");
       expect(await fixture.prepare(actual.byteLength - 1)).toMatchObject({
         skipped: true, reason: "file_too_large",
       });
-      expect(fixture.encrypt).not.toHaveBeenCalled();
       expect(fixture.upload).not.toHaveBeenCalled();
       expect(await fixture.prepare(actual.byteLength)).not.toHaveProperty("skipped");
       expect(await fixture.prepare(actual.byteLength - 1)).toMatchObject({
@@ -204,7 +191,6 @@ describe("PushMutationPreparer retries", () => {
 
 async function createRetryFixture(path: string, cacheMaxBytes?: number) {
   const store = createTestSyncStore();
-  const crypto = createSyncCryptoContext();
   const contentRuntime = new SyncContentRuntime();
   const blobRetryCache = new PushBlobRetryCache(contentRuntime, cacheMaxBytes);
   let bytes = encodeUtf8("original");
@@ -217,21 +203,18 @@ async function createRetryFixture(path: string, cacheMaxBytes?: number) {
     }),
   };
   await store.markEntryDirty(mutation);
-  const encrypt = vi.spyOn(crypto, "encryptBlob");
   const upload = vi.fn(async () => {});
   const preparer = new PushMutationPreparer({
-    getSyncCryptoContext: () => crypto,
     contentRuntime,
     fileReader: { readBytes: async () => bytes },
     blobClient: { uploadBlob: upload },
     remotelyStagedBlobIds: new Set(), blobRetryCache,
   });
   return {
-    store, crypto, mutation, encrypt, upload, contentRuntime,
+    store, mutation, upload, contentRuntime,
     changeContents: (updated: Uint8Array) => { bytes = updated; },
     prepare: (maxBytes = 0) => preparer.prepareMutationForCommit(store, createToken(), mutation, maxBytes),
     dispose: async () => {
-      crypto.dispose();
       await contentRuntime.dispose();
       await store.close();
     },

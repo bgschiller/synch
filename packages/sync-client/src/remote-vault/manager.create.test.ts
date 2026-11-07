@@ -23,7 +23,6 @@ describe("RemoteVaultManager create", () => {
               id: "vault-created",
               organizationId: "org-1",
               name: "Personal",
-              activeKeyVersion: 1,
               createdAt: "2026-04-22T00:00:00.000Z",
             },
           };
@@ -33,7 +32,6 @@ describe("RemoteVaultManager create", () => {
             id: "vault-created",
             organizationId: "org-1",
             name: "Personal",
-            activeKeyVersion: 1,
             createdAt: "2026-04-22T00:00:00.000Z",
           },
         }),

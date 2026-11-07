@@ -1,7 +1,6 @@
 export * from "./sync/core/content";
 export * from "./sync/core/conflict-policy";
 export * from "./sync/core/content-runtime";
-export * from "./sync/core/crypto";
 export * from "./sync/core/bytes-in-flight";
 export * from "./sync/core/file-rules";
 export * from "./sync/core/presence";

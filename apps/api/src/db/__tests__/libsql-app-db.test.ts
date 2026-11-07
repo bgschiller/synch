@@ -83,7 +83,6 @@ describe("libSQL app DB", () => {
 					id: vaultId,
 					organizationId: "org-1",
 					name: "Test Vault",
-					activeKeyVersion: 1,
 				})
 				.returning(),
 			db.insert(schema.vaultMembership).values({
@@ -110,7 +109,6 @@ describe("libSQL app DB", () => {
 			id: "vault-1",
 			organizationId: "org-1",
 			name: "Test Vault",
-			activeKeyVersion: 1,
 		});
 		const repository = new VaultSyncStatusRepository(db);
 		const summary: VaultSyncStatusSummary = {
